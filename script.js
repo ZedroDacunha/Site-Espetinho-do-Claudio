@@ -1,5 +1,4 @@
 const formulario = document.querySelector("#form-produto");
-const ver = document.querySelector("#verlista");
 const nome = document.querySelector("#nome");
 const preco = document.querySelector("#preco");
 const quantidade = document.querySelector("#quantidade");
@@ -21,11 +20,39 @@ function mostrarlista(produtos){
         const botao = document.createElement("button");
         botao.textContent = "Excluir";
         
+        const mais = document.createElement("button");
+        mais.textContent = "+";
+
+        const menos = document.createElement("button");
+        menos.textContent = "-";
+
         item.appendChild(botao);
         lista.appendChild(item);
+        item.appendChild(mais);
+        item.appendChild(menos);
 
         botao.addEventListener("click", ()=>{
             produtos.splice(indice, 1);
+            salvarProduto(produtos);
+            mostrarlista(produtos);
+        });
+
+        mais.addEventListener("click", ()=>{
+            console.log(produto.quantidade);
+            produto.quantidade += 1;
+            console.log(produto.quantidade);
+            salvarProduto(produtos);
+            mostrarlista(produtos);
+        });
+        menos.addEventListener("click", ()=>{
+            console.log(produto.quantidade);
+            if(produto.quantidade<=0){
+                alert("Quantidade do produto não pode ser negativa");
+            }
+            else{
+                produto.quantidade -= 1;
+            }
+            console.log(produto.quantidade);
             salvarProduto(produtos);
             mostrarlista(produtos);
         });
