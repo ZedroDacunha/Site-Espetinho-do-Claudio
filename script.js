@@ -3,7 +3,7 @@ const ver = document.querySelector("#verlista");
 const nome = document.querySelector("#nome");
 const preco = document.querySelector("#preco");
 const quantidade = document.querySelector("#quantidade");
-const lista = document.querySelector("lista-produtos");
+const lista = document.querySelector("#lista-produtos");
 
 
 
@@ -14,11 +14,14 @@ const produtos = list || [];
 function mostrarlista(produtos){
     lista.innerHTML = "";
 
-    lista.forEach( produtos => {
+    produtos.forEach( produto => {
         const item = document.createElement("li");
-        item.textContent = produtos;
+        item.textContent = ` nome - ${produto.nome} / preço - ${produto.preco}R$ / quantidade - ${produto.quantidade}`;
         lista.appendChild(item);
-        
+        <button id="botao">Excluir</button>
+        botao.addEventListener("click", function()=>{
+            
+        });
     });
 }
 
@@ -37,11 +40,6 @@ function lerProduto(){
     return lista;
 }
 
-ver.addEventListener("click", function(produto) {
-    console.log(lerProduto());
-    mostrar
-});
-
 formulario.addEventListener("submit", function(event){
     event.preventDefault();
     console.log("enviou o formulário");
@@ -58,7 +56,11 @@ formulario.addEventListener("submit", function(event){
 
     formulario.reset();
 
+    mostrarlista(produtos);
+
     console.log(produto);
     console.log(typeof produto.preco);
 
 });
+
+mostrarlista(produtos);
