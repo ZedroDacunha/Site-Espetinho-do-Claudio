@@ -6,7 +6,6 @@ const quantidade = document.querySelector("#quantidade");
 const lista = document.querySelector("#lista-produtos");
 
 
-
 const list = lerProduto();
 const produtos = list || [];
 
@@ -14,13 +13,21 @@ const produtos = list || [];
 function mostrarlista(produtos){
     lista.innerHTML = "";
 
-    produtos.forEach( produto => {
+    produtos.forEach((produto, indice) => {
+        
         const item = document.createElement("li");
         item.textContent = ` nome - ${produto.nome} / preço - ${produto.preco}R$ / quantidade - ${produto.quantidade}`;
+
+        const botao = document.createElement("button");
+        botao.textContent = "Excluir";
+        
+        item.appendChild(botao);
         lista.appendChild(item);
-        <button id="botao">Excluir</button>
-        botao.addEventListener("click", function()=>{
-            
+
+        botao.addEventListener("click", ()=>{
+            produtos.splice(indice, 1);
+            salvarProduto(produtos);
+            mostrarlista(produtos);
         });
     });
 }
