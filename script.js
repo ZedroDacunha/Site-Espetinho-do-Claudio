@@ -2,18 +2,19 @@ const formulario = document.querySelector("#form-produto");
 const nome = document.querySelector("#nome");
 const preco = document.querySelector("#preco");
 const quantidade = document.querySelector("#quantidade");
-const lista = document.querySelector("#lista-produtos");
-
+const listaUl = document.querySelector("#lista-produtos");
+const min = document.querySelector("#minimo");
+const busca = document.querySelector("#busca");
 
 const list = lerProduto();
 const produtos = list || [];
 
 
-function mostrarlista(produtos){
-    lista.innerHTML = "";
+function mostrarlista(listaMostrar){
+    listaUl.innerHTML = "";
 
-    produtos.forEach((produto, indice) => {
-        
+    listaMostrar.forEach((produto, indice) => {
+
         const item = document.createElement("li");
         item.textContent = ` nome - ${produto.nome} / preço - ${produto.preco}R$ / quantidade - ${produto.quantidade}`;
 
@@ -26,13 +27,18 @@ function mostrarlista(produtos){
         const menos = document.createElement("button");
         menos.textContent = "-";
 
+        if(produto.quantidade<=produto.minimo){
+            item.classList.add("baixo");
+        }
+
         item.appendChild(botao);
-        lista.appendChild(item);
+        listaUl.appendChild(item);
         item.appendChild(mais);
         item.appendChild(menos);
 
         botao.addEventListener("click", ()=>{
-            produtos.splice(indice, 1);
+            const posicao = produtos.indexOf(produto);
+            produtos.splice(posicao, 1);
             salvarProduto(produtos);
             mostrarlista(produtos);
         });
@@ -81,8 +87,8 @@ formulario.addEventListener("submit", function(event){
     const produto = {
     nome : nome.value,
     preco : Number(preco.value),
-    quantidade : Number(quantidade.value)
-    
+    quantidade : Number(quantidade.value),
+    minimo : Number(min.value)
 }
 
     adicionarProduto(produto);
@@ -95,6 +101,13 @@ formulario.addEventListener("submit", function(event){
     console.log(produto);
     console.log(typeof produto.preco);
 
+});
+
+busca.addEventListener("input", function(){
+    const texto = busca.value.toLowerCase();
+    const filtrados = produtos.filter(produto => produto.nome.toLowerCase().includes(texto));
+    mostrarlista(filtrados);
+    
 });
 
 mostrarlista(produtos);
