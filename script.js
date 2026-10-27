@@ -5,9 +5,15 @@ const quantidade = document.querySelector("#quantidade");
 const listaUl = document.querySelector("#lista-produtos");
 const min = document.querySelector("#minimo");
 const busca = document.querySelector("#busca");
+const resumo = document.querySelector("#resumo");
 
 const list = lerProduto();
 const produtos = list || [];
+
+function mostrarResumo(){
+    const soma = produtos.reduce((total, produto) => total + (produto.preco*produto.quantidade) , 0 );
+    console.log (soma)
+}
 
 
 function mostrarlista(listaMostrar){
