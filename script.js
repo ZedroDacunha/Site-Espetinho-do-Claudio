@@ -12,7 +12,13 @@ const produtos = list || [];
 
 function mostrarResumo(){
     const soma = produtos.reduce((total, produto) => total + (produto.preco*produto.quantidade) , 0 );
-    console.log (soma)
+    console.log (soma);
+    
+    const Ialerta = produtos.filter(produto => quantidade<=min).length;
+    
+    
+    resumo.textContent = `Valor em estoque: R$${soma.toFixed(2)} alerta: ${Ialerta}`
+
 }
 
 
@@ -117,3 +123,4 @@ busca.addEventListener("input", function(){
 });
 
 mostrarlista(produtos);
+mostrarResumo();
