@@ -11,13 +11,13 @@ const list = lerProduto();
 const produtos = list || [];
 
 function mostrarResumo(){
-    const soma = produtos.reduce((total, produto) => total + (produto.preco*produto.quantidade) , 0 );
-    console.log (soma);
+    const soma = produtos.reduce((total, produto) => total + (produto.preco*produto.quantidade), 0 );
     
-    const Ialerta = produtos.filter(produto => quantidade<=min).length;
+    const Ialerta = produtos.filter(produto => produto.quantidade<=produto.minimo).length;
     
     
-    resumo.textContent = `Valor em estoque: R$${soma.toFixed(2)} alerta: ${Ialerta}`
+    resumo.textContent = `Valor em estoque: R$${soma.toFixed(2)} alerta: ${Ialerta}`;
+    
 
 }
 
@@ -74,7 +74,9 @@ function mostrarlista(listaMostrar){
             salvarProduto(produtos);
             mostrarlista(produtos);
         });
+        
     });
+    mostrarResumo();
 }
 
 function adicionarProduto(produto){
@@ -123,4 +125,3 @@ busca.addEventListener("input", function(){
 });
 
 mostrarlista(produtos);
-mostrarResumo();
