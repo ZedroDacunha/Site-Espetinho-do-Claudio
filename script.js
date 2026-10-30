@@ -11,21 +11,29 @@ const list = lerProduto();
 const produtos = list || [];
 
 function mostrarResumo(){
-    const soma = produtos.reduce((total, produto) => total + (produto.preco*produto.quantidade), 0 );
+    const soma = produtos.reduce((total, produto) => total + (produto.preco*produto.quantidade) , 0 );
+    console.log (soma);
     
-    const Ialerta = produtos.filter(produto => produto.quantidade<=produto.minimo).length;
+    const Ialerta = produtos.filter(produto => quantidade<=min).length;
     
     
-    resumo.textContent = `Valor em estoque: R$${soma.toFixed(2)} alerta: ${Ialerta}`;
-    
+    resumo.textContent = `Valor em estoque: R$${soma.toFixed(2)} alerta: ${Ialerta}`
 
 }
 
+function atualizarTela(){
+
+    const texto = busca.value.toLowerCase();
+    const filtrados = produtos.filter(produto => produto.nome.toLowerCase().includes(texto));
+
+    mostrarlista(filtrados);
+
+}
 
 function mostrarlista(listaMostrar){
     listaUl.innerHTML = "";
 
-    listaMostrar.forEach((produto, indice) => {
+    listaMostrar.forEach((produto) => {
 
         const item = document.createElement("li");
         item.textContent = ` nome - ${produto.nome} / preço - ${produto.preco}R$ / quantidade - ${produto.quantidade}`;
@@ -52,31 +60,27 @@ function mostrarlista(listaMostrar){
             const posicao = produtos.indexOf(produto);
             produtos.splice(posicao, 1);
             salvarProduto(produtos);
-            mostrarlista(produtos);
+            atualizarTela();
         });
 
         mais.addEventListener("click", ()=>{
-            console.log(produto.quantidade);
             produto.quantidade += 1;
-            console.log(produto.quantidade);
             salvarProduto(produtos);
-            mostrarlista(produtos);
+            atualizarTela();
         });
+
         menos.addEventListener("click", ()=>{
-            console.log(produto.quantidade);
             if(produto.quantidade<=0){
                 alert("Quantidade do produto não pode ser negativa");
             }
             else{
                 produto.quantidade -= 1;
             }
-            console.log(produto.quantidade);
             salvarProduto(produtos);
-            mostrarlista(produtos);
+            atualizarTela();
         });
         
     });
-    mostrarResumo();
 }
 
 function adicionarProduto(produto){
@@ -96,7 +100,6 @@ function lerProduto(){
 
 formulario.addEventListener("submit", function(event){
     event.preventDefault();
-    console.log("enviou o formulário");
 
     const produto = {
     nome : nome.value,
@@ -109,19 +112,14 @@ formulario.addEventListener("submit", function(event){
     salvarProduto(produtos);
 
     formulario.reset();
-
-    mostrarlista(produtos);
-
-    console.log(produto);
-    console.log(typeof produto.preco);
+    busca.value = "";
+    atualizarTela();
 
 });
 
 busca.addEventListener("input", function(){
-    const texto = busca.value.toLowerCase();
-    const filtrados = produtos.filter(produto => produto.nome.toLowerCase().includes(texto));
-    mostrarlista(filtrados);
-    
+   atualizarTela();
 });
 
 mostrarlista(produtos);
+mostrarResumo();
