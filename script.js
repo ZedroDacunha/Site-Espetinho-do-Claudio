@@ -7,14 +7,12 @@ const min = document.querySelector("#minimo");
 const busca = document.querySelector("#busca");
 const resumo = document.querySelector("#resumo");
 
-const list = lerProduto();
-const produtos = list || [];
+let produtos = [];
 
 function mostrarResumo(){
     const soma = produtos.reduce((total, produto) => total + (produto.preco*produto.quantidade) , 0 );
-    console.log (soma);
     
-    const Ialerta = produtos.filter(produto => quantidade<=min).length;
+    const Ialerta = produtos.filter(produto => produto.quantidade<=produto.minimo).length;
     
     
     resumo.textContent = `Valor em estoque: R$${soma.toFixed(2)} alerta: ${Ialerta}`
@@ -81,11 +79,15 @@ function mostrarlista(listaMostrar){
         });
         
     });
+    mostrarResumo();
 }
 
-function adicionarProduto(produto){
-    produtos.push(produto);
-    console.log(produtos);
+async function adicionarProduto(produto){
+    await fetch("http://localhost:3000/produtos",{
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(produto)
+       });
 }
 
 function salvarProduto(lista){
@@ -98,7 +100,7 @@ function lerProduto(){
     return lista;
 }
 
-formulario.addEventListener("submit", function(event){
+formulario.addEventListener("submit", async function(event){
     event.preventDefault();
 
     const produto = {
@@ -108,18 +110,25 @@ formulario.addEventListener("submit", function(event){
     minimo : Number(min.value)
 }
 
-    adicionarProduto(produto);
-    salvarProduto(produtos);
+
+    await adicionarProduto(produto);
+    await carregarLista();
 
     formulario.reset();
     busca.value = "";
-    atualizarTela();
-
+    
 });
 
 busca.addEventListener("input", function(){
    atualizarTela();
 });
 
-mostrarlista(produtos);
-mostrarResumo();
+async function carregarLista() {
+    const resposta = await fetch("http://localhost:3000/produtos");
+    produtos = await resposta.json();
+
+    atualizarTela();
+    console.log(produtos);
+}
+
+carregarLista();
