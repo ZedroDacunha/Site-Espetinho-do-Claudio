@@ -19,6 +19,14 @@ function mostrarResumo(){
 
 }
 
+async function carregarLista() {
+    const resposta = await fetch("http://localhost:3000/produtos");
+    produtos = await resposta.json();
+
+    atualizarTela();
+    console.log(produtos);
+}
+
 function atualizarTela(){
 
     const texto = busca.value.toLowerCase();
@@ -54,11 +62,11 @@ function mostrarlista(listaMostrar){
         item.appendChild(mais);
         item.appendChild(menos);
 
-        botao.addEventListener("click", ()=>{
-            const posicao = produtos.indexOf(produto);
-            produtos.splice(posicao, 1);
-            salvarProduto(produtos);
-            atualizarTela();
+        botao.addEventListener("click", async()=>{
+            await fetch(`http://localhost:3000/produtos/${produto.id}`,{
+                method: "DELETE"
+            });
+            await carregarLista();
         });
 
         mais.addEventListener("click", ()=>{
@@ -107,7 +115,7 @@ formulario.addEventListener("submit", async function(event){
     nome : nome.value,
     preco : Number(preco.value),
     quantidade : Number(quantidade.value),
-    minimo : Number(min.value)
+    minimo : Number(min.value),
 }
 
 
@@ -123,12 +131,5 @@ busca.addEventListener("input", function(){
    atualizarTela();
 });
 
-async function carregarLista() {
-    const resposta = await fetch("http://localhost:3000/produtos");
-    produtos = await resposta.json();
-
-    atualizarTela();
-    console.log(produtos);
-}
 
 carregarLista();
