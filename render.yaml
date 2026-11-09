@@ -4,6 +4,8 @@ services:
     runtime: node
     region: virginia
     plan: 0.5c-512mb
+    branch: main
+    autoDeployTrigger: commit
     buildCommand: npm ci --prefix servidor
     startCommand: npm start --prefix servidor
     healthCheckPath: /api/health
