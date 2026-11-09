@@ -6,10 +6,11 @@ Sistema de estoque com painel web, entradas e saídas, histórico e acesso prote
 
 O repositório inclui `render.yaml`, que prepara um serviço web Node e um PostgreSQL na região da Virgínia. Essa região fica mais perto do Brasil do que as outras regiões disponíveis no Render. O plano do banco e do serviço é **pago**; o Blueprint usa um banco inicial de 5 GB. O Render mostra os valores antes da confirmação da criação.
 
-1. Envie esta branch ao GitHub e, no Render, escolha **New → Blueprint** e conecte o repositório.
+1. Envie o repositório ao GitHub e, no Render, escolha **New → Blueprint** e conecte o repositório.
 2. Revise os recursos descritos em `render.yaml` e confirme a implantação.
 3. Quando solicitado, informe `APP_PASSWORD` no painel do Render. Use uma senha forte e exclusiva, com pelo menos 12 caracteres; não a coloque no código ou no Git.
 4. O Render gera `SESSION_SECRET` e conecta o site ao PostgreSQL pela rede privada. Depois do deploy, abra a URL HTTPS do serviço e entre com a senha.
+5. O serviço acompanha a branch `main` e inicia automaticamente um novo deploy a cada commit enviado para ela. Assim, commits feitos em branches de trabalho só chegam ao site depois de serem integrados à `main`.
 
 O acesso ao estoque exige a senha compartilhada; sessões usam cookie protegido, com expiração, e tentativas de login são limitadas. O PostgreSQL aceita conexões somente da rede privada do Render. O código também bloqueia uma gravação baseada numa versão antiga do estoque: se outro acesso tiver salvado antes, será preciso recarregar os dados antes de tentar de novo.
 
