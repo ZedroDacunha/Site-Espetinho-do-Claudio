@@ -60,6 +60,23 @@ function updateSummary() {
   document.querySelector("#stat-units").textContent = totalUnits;
   document.querySelector("#stat-value").textContent = formatMoney(stockValue);
   document.querySelector("#count-pill").textContent = products.length;
+  document.querySelector("#nav-product-count").textContent = products.length;
+
+  const lowStockProducts = products.filter(product => Number(product.quantidade) <= (Number(product.minimo) || 0));
+  document.querySelector("#stat-low-count").textContent = lowStockProducts.length;
+  document.querySelector("#low-stock-pill").textContent = lowStockProducts.length;
+  const lowStockList = document.querySelector("#dashboard-low-stock");
+  lowStockList.replaceChildren(...lowStockProducts.map(product => {
+    const row = document.createElement("div");
+    row.className = "low-stock-row";
+    const name = document.createElement("strong");
+    name.textContent = product.nome;
+    const amount = document.createElement("span");
+    amount.textContent = `${product.quantidade} em estoque · mínimo ${product.minimo}`;
+    row.append(name, amount);
+    return row;
+  }));
+  document.querySelector("#low-stock-empty").hidden = lowStockProducts.length > 0;
 }
 
 function createProductRow(product) {
@@ -309,11 +326,45 @@ function newProductId() {
 
 searchInput.addEventListener("input", renderProducts);
 
+const validViews = new Set(["inicio", "estoque", "importacoes", "cadastro"]);
+function activateView(viewName) {
+  const activeView = validViews.has(viewName) ? viewName : "inicio";
+  document.querySelectorAll(".view").forEach(view => { view.hidden = view.id !== activeView; });
+  document.querySelectorAll(".nav-link").forEach(link => {
+    if (link.getAttribute("href") === `#${activeView}`) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
+  closeMobileMenu();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function closeMobileMenu() {
+  document.body.classList.remove("sidebar-open");
+  document.querySelector("#menu-toggle").setAttribute("aria-expanded", "false");
+  document.querySelector("#menu-toggle").setAttribute("aria-label", "Abrir menu");
+}
+
+document.querySelectorAll("[data-view-link]").forEach(link => link.addEventListener("click", () => {
+  window.setTimeout(() => activateView(window.location.hash.slice(1)), 0);
+}));
+window.addEventListener("hashchange", () => activateView(window.location.hash.slice(1)));
+activateView(window.location.hash.slice(1) || "inicio");
+
+document.querySelector("#menu-toggle").addEventListener("click", () => {
+  const isOpen = document.body.classList.toggle("sidebar-open");
+  document.querySelector("#menu-toggle").setAttribute("aria-expanded", String(isOpen));
+  document.querySelector("#menu-toggle").setAttribute("aria-label", isOpen ? "Fechar menu" : "Abrir menu");
+});
+document.querySelector("#nav-overlay").addEventListener("click", closeMobileMenu);
+
 document.addEventListener("keydown", event => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
     event.preventDefault();
+    if (window.location.hash !== "#estoque") window.location.hash = "estoque";
+    activateView("estoque");
     searchInput.focus();
   }
+  if (event.key === "Escape") closeMobileMenu();
 });
 
 function applyTheme(theme) {
