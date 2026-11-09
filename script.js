@@ -306,8 +306,40 @@ function renderProducts() {
   renderMovements();
 }
 
+function periodStart(period) {
+  const now = new Date();
+  if (period === "7" || period === "30") {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (Number(period) - 1));
+    return start.getTime();
+  }
+  if (period === "mes") return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  return -Infinity;
+}
+
+function renderMovementSummary(filtered) {
+  const summary = document.querySelector("#movement-summary");
+  if (!summary) return;
+  if (!movements.length) {
+    summary.textContent = "O histórico começa a ser registrado a partir de agora.";
+    return;
+  }
+  const totals = filtered.reduce((acc, movement) => {
+    if (movement.type === "entrada") acc.entradas += Number(movement.quantity);
+    if (movement.type === "saida") acc.saidas += Number(movement.quantity);
+    acc.registros += 1;
+    return acc;
+  }, { entradas: 0, saidas: 0, registros: 0 });
+  const parts = [`${totals.registros} registro(s) no filtro`, `${totals.entradas} un. de entrada`, `${totals.saidas} un. de saída`];
+  const saldo = totals.entradas - totals.saidas;
+  if (saldo !== 0) parts.push(`saldo ${saldo > 0 ? "+" : "−"}${Math.abs(saldo)} un.`);
+  summary.textContent = `${parts.join(" · ")}.`;
+}
+
 function renderMovements() {
   const typeFilter = document.querySelector("#movement-filter").value;
+  const periodFilter = document.querySelector("#movement-period-filter").value;
   const productFilter = document.querySelector("#movement-product-filter");
   const selectedProduct = productFilter.value || "todos";
   const productNames = [...new Set(movements.map(movement => movement.productName))].sort((a, b) => a.localeCompare(b, "pt-BR"));
@@ -316,8 +348,10 @@ function renderMovements() {
   if (productNames.includes(selectedProduct)) productFilter.value = selectedProduct;
   const selectedName = productFilter.value;
   const sorted = [...movements].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  const periodFrom = periodStart(periodFilter);
   const filtered = sorted.filter(movement => (typeFilter === "todas" || movement.type === typeFilter)
-    && (selectedName === "todos" || movement.productName === selectedName));
+    && (selectedName === "todos" || movement.productName === selectedName)
+    && Date.parse(movement.createdAt) >= periodFrom);
   const list = document.querySelector("#movement-list");
   list.replaceChildren(...filtered.map(movement => {
     const row = document.createElement("article");
@@ -339,6 +373,7 @@ function renderMovements() {
     return row;
   }));
   document.querySelector("#movement-count").textContent = movements.length;
+  renderMovementSummary(filtered);
   const empty = document.querySelector("#movement-empty");
   empty.hidden = filtered.length > 0;
   const emptyTitle = empty.querySelector("strong");
@@ -354,6 +389,7 @@ function renderMovements() {
 
 document.querySelector("#movement-filter").addEventListener("change", renderMovements);
 document.querySelector("#movement-product-filter").addEventListener("change", renderMovements);
+document.querySelector("#movement-period-filter").addEventListener("change", renderMovements);
 
 async function removeProduct(id) {
   if (!canMutate()) return;
