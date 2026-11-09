@@ -2,25 +2,29 @@
 
 Sistema de estoque com painel web, entradas e saídas, histórico e acesso protegido por senha compartilhada. Em produção, usa PostgreSQL gerenciado; no desenvolvimento local, continua funcionando com um arquivo JSON no servidor.
 
-## Implantação em nuvem (Render)
+## Implantação gratuita (Render + Neon)
 
-O repositório inclui `render.yaml`, que prepara um serviço web Node e um PostgreSQL na região da Virgínia. Essa região fica mais perto do Brasil do que as outras regiões disponíveis no Render. O plano do banco e do serviço é **pago**; o Blueprint usa um banco inicial de 5 GB. O Render mostra os valores antes da confirmação da criação.
+O `render.yaml` prepara o serviço Node no plano gratuito do Render. O PostgreSQL fica no Neon Free; ele é externo porque o PostgreSQL gratuito do Render expira. O Render hospeda o site e faz deploy automaticamente quando há commits na branch `main`.
 
-1. Envie o repositório ao GitHub e, no Render, escolha **New → Blueprint** e conecte o repositório.
-2. Revise os recursos descritos em `render.yaml` e confirme a implantação.
-3. Quando solicitado, informe `APP_PASSWORD` no painel do Render. Use uma senha forte e exclusiva, com pelo menos 12 caracteres; não a coloque no código ou no Git.
-4. O Render gera `SESSION_SECRET` e conecta o site ao PostgreSQL pela rede privada. Depois do deploy, abra a URL HTTPS do serviço e entre com a senha.
-5. O serviço acompanha a branch `main` e inicia automaticamente um novo deploy a cada commit enviado para ela. Assim, commits feitos em branches de trabalho só chegam ao site depois de serem integrados à `main`.
+### Passo a passo
 
-O acesso ao estoque exige a senha compartilhada; sessões usam cookie protegido, com expiração, e tentativas de login são limitadas. O PostgreSQL aceita conexões somente da rede privada do Render. O código também bloqueia uma gravação baseada numa versão antiga do estoque: se outro acesso tiver salvado antes, será preciso recarregar os dados antes de tentar de novo.
+1. **Guarde uma cópia dos dados atuais.** No site da prévia, abra a área de Importações e exporte o backup JSON de produtos e histórico. Guarde o arquivo no seu computador.
+2. **Crie o banco no Neon.** Acesse [Neon](https://neon.tech/), crie uma conta e um projeto PostgreSQL gratuito. Escolha uma região próxima da Virgínia, se disponível. Copie a connection string (de preferência a pooled connection string); ela deve incluir SSL. Trate-a como senha e não a envie por chat nem a coloque no Git.
+3. **Envie/mescle a configuração gratuita para `main`.** O `render.yaml` deve estar na branch `main` antes de criar o serviço.
+4. **Crie o serviço no Render.** Acesse [Render](https://render.com/), escolha **New → Blueprint**, conecte o repositório e selecione a branch `main`. Confira que o serviço web está no plano **Free** e prossiga.
+5. **Preencha os segredos quando solicitado.** Para `DATABASE_URL`, cole a connection string do Neon; para `APP_PASSWORD`, crie uma senha forte e exclusiva com pelo menos 12 caracteres. O Render gera `SESSION_SECRET`. Nunca publique esses valores.
+6. **Implante e teste.** Quando o deploy terminar, abra a URL HTTPS do serviço e entre com `APP_PASSWORD`. Importe o backup JSON feito no passo 1 para transferir o estoque.
+7. **Mantenha backups externos.** Exporte o backup regularmente e guarde cópias fora do Render e do Neon. Teste a restauração de tempos em tempos.
 
-**Antes de trocar do endereço de prévia para a URL do Render, exporte um backup no site atual.** Os navegadores isolam os dados locais por domínio; depois do deploy, entre no Render e importe esse arquivo para levar produtos e histórico ao servidor novo.
+### Limites importantes do gratuito
 
-### Persistência e cópias de segurança
+O serviço web gratuito do Render pode dormir após 15 minutos sem tráfego e leva um tempo para acordar; seu disco local é temporário, por isso o estoque é mantido no PostgreSQL externo. O Neon Free tem limites de uso e armazenamento (atualmente 1 GB e 100 CU-horas mensais por projeto). Consulte os [limites do Render](https://render.com/docs/free) e os [planos do Neon](https://neon.com/pricing), pois podem mudar.
 
-O Blueprint usa um plano pago do Render Postgres, não o plano gratuito. Segundo a [documentação oficial do Render](https://render.com/docs/postgresql-backups), bancos pagos recebem recuperação contínua para um ponto no tempo: a janela é de 3 dias no workspace Hobby e 7 dias no Pro ou superior. Exportações lógicas podem ser baixadas para guardar cópias fora do Render. O plano gratuito não oferece esses backups automáticos e expira após 30 dias.
+Esta configuração **não oferece a mesma proteção de backup e recuperação dos planos pagos**. O PostgreSQL gratuito do Render expira após 30 dias, por isso não o use para este setup. Nenhum provedor garante risco zero: os backups JSON externos são importantes.
 
-Nenhum provedor pode prometer risco zero de perda. Mantenha também cópias exportadas fora da conta do Render e teste a restauração. A [documentação de backups](https://render.com/docs/postgresql-backups) explica a recuperação e as exportações. O armazenamento de 5 GB é um ponto de partida; o Render permite aumentar capacidade e plano quando necessário.
+O acesso ao estoque exige a senha compartilhada; sessões usam cookie protegido, com expiração, e tentativas de login são limitadas. O código também bloqueia uma gravação baseada numa versão antiga do estoque: se outro acesso tiver salvado antes, será preciso recarregar os dados antes de tentar de novo.
+
+O serviço acompanha a branch `main` e inicia automaticamente um novo deploy a cada commit enviado para ela. Commits feitos em branches de trabalho só chegam ao site depois de serem integrados à `main`.
 
 ## Executar localmente
 
