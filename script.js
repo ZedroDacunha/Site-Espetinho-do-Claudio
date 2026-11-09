@@ -1,6 +1,9 @@
 const STORAGE_KEY = "espetinhos-claudio-produtos-v1";
 const MOVEMENTS_KEY = "espetinhos-claudio-movimentacoes-v1";
 const THEME_KEY = "espetinhos-claudio-tema";
+const BACKUP_KEY = "espetinhos-claudio-ultimo-backup";
+
+const SORT_OPTIONS = new Set(["nome", "menor-quantidade", "reposicao", "maior-valor", "recentes"]);
 
 const form = document.querySelector("#form-produto");
 const nomeInput = document.querySelector("#nome");
@@ -8,6 +11,8 @@ const precoInput = document.querySelector("#preco");
 const quantidadeInput = document.querySelector("#quantidade");
 const minimoInput = document.querySelector("#minimo");
 const searchInput = document.querySelector("#busca");
+const sortSelect = document.querySelector("#ordenar-produtos");
+const lowOnlyToggle = document.querySelector("#somente-reposicao");
 const productList = document.querySelector("#lista-produtos");
 const emptyState = document.querySelector("#empty-state");
 const statusMessage = document.querySelector("#status-message");
@@ -153,7 +158,7 @@ function updateSummary() {
   document.querySelector("#count-pill").textContent = products.length;
   document.querySelector("#nav-product-count").textContent = products.length;
 
-  const lowStockProducts = products.filter(product => Number(product.quantidade) <= (Number(product.minimo) || 0));
+  const lowStockProducts = products.filter(needsRestock);
   document.querySelector("#stat-low-count").textContent = lowStockProducts.length;
   document.querySelector("#low-stock-pill").textContent = lowStockProducts.length;
   const lowStockList = document.querySelector("#dashboard-low-stock");
@@ -197,6 +202,13 @@ function createProductRow(product) {
     badge.textContent = "● Em estoque";
   }
 
+  const stockControls = document.createElement("div");
+  stockControls.className = "stock-controls";
+  const quantityValue = document.createElement("span");
+  quantityValue.className = "quantity-value";
+  quantityValue.textContent = `${quantity} un.`;
+  stockControls.append(quantityValue);
+
   const actions = document.createElement("div");
   actions.className = "product-actions";
   const movementButtons = document.createElement("div");
@@ -234,25 +246,58 @@ function createProductRow(product) {
   recordActions.append(editButton, removeButton);
   actions.append(movementButtons, recordActions);
 
-  row.append(details, badge, actions);
+  row.append(details, badge, stockControls, actions);
   return row;
+}
+
+function needsRestock(product) {
+  return Number(product.quantidade) <= (Number(product.minimo) || 0);
+}
+
+function sortProducts(list, criterion) {
+  const sorted = [...list];
+  switch (criterion) {
+    case "menor-quantidade":
+      sorted.sort((a, b) => Number(a.quantidade) - Number(b.quantidade) || a.nome.localeCompare(b.nome, "pt-BR"));
+      break;
+    case "reposicao":
+      sorted.sort((a, b) => Number(needsRestock(b)) - Number(needsRestock(a))
+        || Number(a.quantidade) - Number(b.quantidade)
+        || a.nome.localeCompare(b.nome, "pt-BR"));
+      break;
+    case "maior-valor":
+      sorted.sort((a, b) => Number(b.preco) * Number(b.quantidade) - Number(a.preco) * Number(a.quantidade)
+        || a.nome.localeCompare(b.nome, "pt-BR"));
+      break;
+    case "recentes":
+      sorted.reverse();
+      break;
+    default:
+      sorted.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  }
+  return sorted;
 }
 
 function renderProducts() {
   const query = searchInput.value.trim().toLocaleLowerCase("pt-BR");
-  const filtered = products.filter(product => product.nome.toLocaleLowerCase("pt-BR").includes(query));
-  productList.replaceChildren(...filtered.map(createProductRow));
+  const criterion = SORT_OPTIONS.has(sortSelect.value) ? sortSelect.value : "nome";
+  let filtered = products.filter(product => product.nome.toLocaleLowerCase("pt-BR").includes(query));
+  if (lowOnlyToggle.checked) filtered = filtered.filter(needsRestock);
+  const visible = sortProducts(filtered, criterion);
+  productList.replaceChildren(...visible.map(createProductRow));
   productList.classList.add("product-list");
   emptyState.hidden = products.length > 0;
   let noResults = document.querySelector("#no-results");
-  if (products.length > 0 && filtered.length === 0) {
+  if (products.length > 0 && visible.length === 0) {
     if (!noResults) {
       noResults = document.createElement("p");
       noResults.id = "no-results";
       noResults.className = "empty-state";
-      noResults.textContent = "Nenhum produto encontrado com esse nome.";
       productList.after(noResults);
     }
+    noResults.textContent = lowOnlyToggle.checked && !query
+      ? "Nenhum produto precisa de reposição agora."
+      : "Nenhum produto encontrado com esse filtro.";
     noResults.hidden = false;
   } else if (noResults) {
     noResults.hidden = true;
@@ -318,7 +363,7 @@ async function removeProduct(id) {
   products = products.filter(item => item.id !== id);
   if (await saveProducts()) {
     renderProducts();
-    showStatus(`${product.nome} foi excluído do estoque.`);
+    showStatus(`${product.nome} foi excluído do estoque.${backupReminder()}`);
   } else {
     products = previousProducts;
   }
@@ -344,7 +389,7 @@ form.addEventListener("submit", async event => {
     form.reset();
     searchInput.value = "";
     nomeInput.focus();
-    showStatus(`${product.nome} foi adicionado ao estoque.`);
+    showStatus(`${product.nome} foi adicionado ao estoque.${backupReminder()}`);
   } else {
     products = previousProducts;
     movements = previousMovements;
@@ -443,7 +488,7 @@ movementForm.addEventListener("submit", async event => {
   }
   movementDialog.close();
   renderProducts();
-  showStatus(`${type === "entrada" ? "Entrada" : "Saída"} de ${amount} unidade(s) registrada para ${product.nome}.`);
+  showStatus(`${type === "entrada" ? "Entrada" : "Saída"} de ${amount} unidade(s) registrada para ${product.nome}.${backupReminder()}`);
 });
 
 const backupFileInput = document.querySelector("#backup-file");
@@ -464,8 +509,37 @@ document.querySelector("#export-backup").addEventListener("click", () => {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+  try { localStorage.setItem(BACKUP_KEY, new Date().toISOString()); } catch (_) { /* A data é só um lembrete. */ }
+  renderBackupMeta();
   showStatus("Backup exportado. Guarde o arquivo em um local seguro.");
 });
+
+function lastBackupDate() {
+  try {
+    const saved = localStorage.getItem(BACKUP_KEY);
+    const date = saved ? new Date(saved) : null;
+    return date && Number.isFinite(date.getTime()) ? date : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function renderBackupMeta() {
+  const meta = document.querySelector("#backup-meta");
+  if (!meta) return;
+  const date = lastBackupDate();
+  meta.textContent = date
+    ? `Último backup baixado neste navegador em ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(date)}.`
+    : "Nenhum backup baixado neste navegador ainda.";
+}
+
+function backupReminder() {
+  const date = lastBackupDate();
+  if (!products.length && !movements.length) return "";
+  if (!date) return " Guarde também um backup: use Importações para baixar uma cópia.";
+  const days = Math.floor((Date.now() - date.getTime()) / 86400000);
+  return days >= 7 ? ` Já se passaram ${days} dias desde o último backup; vale baixar um novo em Importações.` : "";
+}
 
 document.querySelector("#import-backup").addEventListener("click", () => backupFileInput.click());
 backupFileInput.addEventListener("change", async () => {
@@ -542,6 +616,8 @@ function makeMovement(product, type, quantity, note = "") {
 }
 
 searchInput.addEventListener("input", renderProducts);
+sortSelect.addEventListener("change", renderProducts);
+lowOnlyToggle.addEventListener("change", renderProducts);
 
 const validViews = new Set(["inicio", "estoque", "importacoes", "cadastro"]);
 function activateView(viewName) {
@@ -566,6 +642,7 @@ document.querySelectorAll("[data-view-link]").forEach(link => link.addEventListe
 }));
 window.addEventListener("hashchange", () => activateView(window.location.hash.slice(1)));
 activateView(window.location.hash.slice(1) || "inicio");
+renderBackupMeta();
 
 document.querySelector("#menu-toggle").addEventListener("click", () => {
   const isOpen = document.body.classList.toggle("sidebar-open");
@@ -573,6 +650,9 @@ document.querySelector("#menu-toggle").addEventListener("click", () => {
   document.querySelector("#menu-toggle").setAttribute("aria-label", isOpen ? "Fechar menu" : "Abrir menu");
 });
 document.querySelector("#nav-overlay").addEventListener("click", closeMobileMenu);
+
+const isMacPlatform = /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent || "");
+document.querySelector("kbd").textContent = isMacPlatform ? "⌘ K" : "Ctrl K";
 
 document.addEventListener("keydown", event => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
@@ -628,6 +708,11 @@ loginForm.addEventListener("submit", async event => {
 });
 
 logoutButton.addEventListener("click", async () => {
+  if (isSaving) {
+    showStatus("Aguarde o salvamento terminar antes de sair.", true);
+    return;
+  }
+  if (products.length && !lastBackupDate() && !window.confirm("Você ainda não baixou nenhum backup neste navegador. Sair agora não apaga os dados salvos no servidor. Deseja sair mesmo assim?")) return;
   logoutButton.disabled = true;
   try {
     const response = await fetch("/api/auth/logout", { method: "POST" });

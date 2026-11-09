@@ -83,7 +83,19 @@
           <section class="panel inventory-panel">
             <div class="inventory-heading">
               <div class="section-heading"><h2>Lista de produtos <span class="count-pill" id="count-pill">0</span></h2></div>
-              <label class="search-box" for="busca"><span aria-hidden="true">⌕</span><input id="busca" type="search" placeholder="Buscar produto..." autocomplete="off"><kbd>⌘ K</kbd></label>
+              <label class="search-box" for="busca"><span aria-hidden="true">⌕</span><input id="busca" type="search" placeholder="Buscar produto..." autocomplete="off"><kbd>Ctrl K</kbd></label>
+            </div>
+            <div class="inventory-toolbar">
+              <label class="sort-field" for="ordenar-produtos">Ordenar por
+                <select class="history-filter" id="ordenar-produtos">
+                  <option value="nome">Nome (A–Z)</option>
+                  <option value="menor-quantidade">Menor quantidade</option>
+                  <option value="reposicao">Reposição primeiro</option>
+                  <option value="maior-valor">Maior valor em estoque</option>
+                  <option value="recentes">Cadastrados recentemente</option>
+                </select>
+              </label>
+              <label class="history-filter-label low-only" for="somente-reposicao"><input id="somente-reposicao" type="checkbox"> Só os que precisam de reposição</label>
             </div>
             <div class="inventory-list" id="lista-produtos" aria-live="polite"></div>
             <div class="empty-state" id="empty-state"><span class="empty-illustration" aria-hidden="true">📦</span><h3>Seu estoque começa aqui</h3><p>Cadastre o primeiro produto para acompanhar seus itens.</p><a class="text-link" href="#cadastro" data-view-link>Cadastrar produto <span aria-hidden="true">→</span></a></div>
@@ -102,10 +114,10 @@
           <section class="panel import-panel">
             <div class="import-intro"><span class="import-illustration" aria-hidden="true">🗂️</span><div><h2>Gerenciar backups</h2><p>O backup guarda os dados dos seus produtos em um arquivo que você pode salvar e levar para outro dispositivo.</p></div></div>
             <div class="backup-cards">
-              <article class="backup-card"><span class="backup-card-icon export-icon" aria-hidden="true">↓</span><h3>Exportar estoque</h3><p>Baixe uma cópia atualizada dos produtos e do histórico de movimentações.</p><button class="primary-button" id="export-backup" type="button">Baixar backup</button></article>
+              <article class="backup-card"><span class="backup-card-icon export-icon" aria-hidden="true">↓</span><h3>Exportar estoque</h3><p>Baixe uma cópia atualizada dos produtos e do histórico de movimentações.</p><button class="primary-button" id="export-backup" type="button">Baixar backup</button><p class="backup-meta" id="backup-meta"></p></article>
               <article class="backup-card"><span class="backup-card-icon import-icon" aria-hidden="true">↑</span><h3>Importar backup</h3><p>Restaure seus produtos a partir de um arquivo de backup JSON salvo anteriormente.</p><button class="secondary-button" id="import-backup" type="button">Escolher arquivo</button><input id="backup-file" type="file" accept=".json,application/json" hidden></article>
             </div>
-            <div class="backup-warning"><span aria-hidden="true">ⓘ</span><p><strong>Importante:</strong> a importação substitui os produtos e o histórico que estão neste navegador. Antes de continuar, você verá uma confirmação. Faça um backup atual para não perder alterações recentes.</p></div>
+            <div class="backup-warning"><span aria-hidden="true">ⓘ</span><p><strong>Importante:</strong> a importação substitui os produtos e o histórico salvos no servidor. Antes de continuar, você verá uma confirmação. Faça um backup atual para não perder alterações recentes.</p></div>
           </section>
         </section>
 
