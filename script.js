@@ -1,4 +1,5 @@
 const STORAGE_KEY = "espetinhos-claudio-produtos-v1";
+const MOVEMENTS_KEY = "espetinhos-claudio-movimentacoes-v1";
 const THEME_KEY = "espetinhos-claudio-tema";
 
 const form = document.querySelector("#form-produto");
@@ -12,6 +13,7 @@ const emptyState = document.querySelector("#empty-state");
 const statusMessage = document.querySelector("#status-message");
 const themeToggle = document.querySelector("#theme-toggle");
 let products = loadProducts();
+let movements = loadMovements();
 let statusTimer;
 
 function loadProducts() {
@@ -31,6 +33,23 @@ function isValidProduct(product) {
     && Number.isInteger(Number(product.minimo)) && Number(product.minimo) >= 0;
 }
 
+function loadMovements() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(MOVEMENTS_KEY) || "[]");
+    return Array.isArray(saved) ? saved.filter(isValidMovement).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)) : [];
+  } catch (error) {
+    console.error("Não foi possível ler o histórico salvo.", error);
+    return [];
+  }
+}
+
+function isValidMovement(movement) {
+  return movement && typeof movement.productName === "string"
+    && ["entrada", "saida", "ajuste"].includes(movement.type)
+    && Number.isInteger(Number(movement.quantity)) && Number(movement.quantity) > 0
+    && typeof movement.createdAt === "string" && Number.isFinite(Date.parse(movement.createdAt));
+}
+
 function saveProducts() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
@@ -38,6 +57,28 @@ function saveProducts() {
   } catch (error) {
     console.error("Não foi possível salvar os produtos.", error);
     showStatus("Não foi possível salvar. Verifique o espaço disponível no navegador.", true);
+    return false;
+  }
+}
+
+function saveInventory() {
+  let previousProducts;
+  let previousMovements;
+  try {
+    previousProducts = localStorage.getItem(STORAGE_KEY);
+    previousMovements = localStorage.getItem(MOVEMENTS_KEY);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+    localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(movements));
+    return true;
+  } catch (error) {
+    console.error("Não foi possível salvar a movimentação.", error);
+    try {
+      if (previousProducts === null) localStorage.removeItem(STORAGE_KEY);
+      else if (previousProducts !== undefined) localStorage.setItem(STORAGE_KEY, previousProducts);
+      if (previousMovements === null) localStorage.removeItem(MOVEMENTS_KEY);
+      else if (previousMovements !== undefined) localStorage.setItem(MOVEMENTS_KEY, previousMovements);
+    } catch (_) { /* Tenta preservar a mensagem de erro mesmo se o navegador bloquear a restauração. */ }
+    showStatus("Não foi possível salvar a movimentação. Confira o espaço disponível no navegador.", true);
     return false;
   }
 }
@@ -108,17 +149,22 @@ function createProductRow(product) {
 
   const actions = document.createElement("div");
   actions.className = "product-actions";
-  const controls = document.createElement("div");
-  controls.className = "stock-controls";
-  const decreaseButton = makeQuantityButton("−", `Diminuir quantidade de ${product.nome}`);
-  decreaseButton.disabled = quantity <= 0;
-  decreaseButton.addEventListener("click", () => changeQuantity(product.id, -1));
-  const amount = document.createElement("span");
-  amount.className = "quantity-value";
-  amount.textContent = quantity;
-  const increaseButton = makeQuantityButton("+", `Aumentar quantidade de ${product.nome}`);
-  increaseButton.addEventListener("click", () => changeQuantity(product.id, 1));
-  controls.append(decreaseButton, amount, increaseButton);
+  const movementButtons = document.createElement("div");
+  movementButtons.className = "movement-buttons";
+  const entryButton = document.createElement("button");
+  entryButton.className = "movement-trigger entry-trigger";
+  entryButton.type = "button";
+  entryButton.textContent = "+ Entrada";
+  entryButton.setAttribute("aria-label", `Registrar entrada de ${product.nome}`);
+  entryButton.addEventListener("click", () => openMovementDialog(product, "entrada"));
+  const exitButton = document.createElement("button");
+  exitButton.className = "movement-trigger exit-trigger";
+  exitButton.type = "button";
+  exitButton.textContent = "− Saída";
+  exitButton.disabled = quantity <= 0;
+  exitButton.setAttribute("aria-label", `Registrar saída de ${product.nome}`);
+  exitButton.addEventListener("click", () => openMovementDialog(product, "saida"));
+  movementButtons.append(entryButton, exitButton);
 
   const editButton = document.createElement("button");
   editButton.className = "edit-button";
@@ -136,19 +182,10 @@ function createProductRow(product) {
   const recordActions = document.createElement("div");
   recordActions.className = "record-actions";
   recordActions.append(editButton, removeButton);
-  actions.append(controls, recordActions);
+  actions.append(movementButtons, recordActions);
 
   row.append(details, badge, actions);
   return row;
-}
-
-function makeQuantityButton(label, accessibleName) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "quantity-button";
-  button.textContent = label;
-  button.setAttribute("aria-label", accessibleName);
-  return button;
 }
 
 function renderProducts() {
@@ -171,16 +208,57 @@ function renderProducts() {
     noResults.hidden = true;
   }
   updateSummary();
+  renderMovements();
 }
 
-function changeQuantity(id, amount) {
-  const product = products.find(item => item.id === id);
-  if (!product) return;
-  const previousQuantity = product.quantidade;
-  product.quantidade = Math.max(0, Number(product.quantidade) + amount);
-  if (saveProducts()) renderProducts();
-  else product.quantidade = previousQuantity;
+function renderMovements() {
+  const typeFilter = document.querySelector("#movement-filter").value;
+  const productFilter = document.querySelector("#movement-product-filter");
+  const selectedProduct = productFilter.value || "todos";
+  const productNames = [...new Set(movements.map(movement => movement.productName))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const productOptions = [new Option("Todos", "todos"), ...productNames.map(name => new Option(name, name))];
+  productFilter.replaceChildren(...productOptions);
+  if (productNames.includes(selectedProduct)) productFilter.value = selectedProduct;
+  const selectedName = productFilter.value;
+  const sorted = [...movements].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  const filtered = sorted.filter(movement => (typeFilter === "todas" || movement.type === typeFilter)
+    && (selectedName === "todos" || movement.productName === selectedName));
+  const list = document.querySelector("#movement-list");
+  list.replaceChildren(...filtered.map(movement => {
+    const row = document.createElement("article");
+    row.className = "movement-row";
+    const details = document.createElement("div");
+    details.className = "movement-details";
+    const title = document.createElement("strong");
+    const labels = { entrada: "Entrada", saida: "Saída", ajuste: "Ajuste" };
+    title.textContent = `${labels[movement.type]} · ${movement.productName}`;
+    const meta = document.createElement("span");
+    const date = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(movement.createdAt));
+    meta.textContent = movement.note ? `${date} · ${movement.note}` : date;
+    details.append(title, meta);
+    const quantity = document.createElement("span");
+    quantity.className = `movement-amount ${movement.type}`;
+    const sign = movement.type === "entrada" ? "+" : movement.type === "saida" ? "−" : "±";
+    quantity.textContent = `${sign}${movement.quantity} un.`;
+    row.append(details, quantity);
+    return row;
+  }));
+  document.querySelector("#movement-count").textContent = movements.length;
+  const empty = document.querySelector("#movement-empty");
+  empty.hidden = filtered.length > 0;
+  const emptyTitle = empty.querySelector("strong");
+  const emptyDescription = empty.querySelector("p");
+  if (movements.length === 0) {
+    emptyTitle.textContent = "Nenhuma movimentação ainda";
+    emptyDescription.textContent = "Quando você registrar uma entrada ou saída, ela aparecerá aqui.";
+  } else {
+    emptyTitle.textContent = "Nenhum resultado";
+    emptyDescription.textContent = "Não há movimentações com esse filtro.";
+  }
 }
+
+document.querySelector("#movement-filter").addEventListener("change", renderMovements);
+document.querySelector("#movement-product-filter").addEventListener("change", renderMovements);
 
 function removeProduct(id) {
   const product = products.find(item => item.id === id);
@@ -207,8 +285,10 @@ form.addEventListener("submit", event => {
   };
   if (!product.nome || product.preco < 0 || product.quantidade < 0 || product.minimo < 0) return;
   const previousProducts = products;
+  const previousMovements = movements;
   products = [product, ...products];
-  if (saveProducts()) {
+  if (product.quantidade > 0) movements = [makeMovement(product, "entrada", product.quantidade, "Estoque inicial no cadastro"), ...movements];
+  if (saveInventory()) {
     renderProducts();
     form.reset();
     searchInput.value = "";
@@ -216,6 +296,7 @@ form.addEventListener("submit", event => {
     showStatus(`${product.nome} foi adicionado ao estoque.`);
   } else {
     products = previousProducts;
+    movements = previousMovements;
   }
 });
 
@@ -240,6 +321,7 @@ editForm.addEventListener("submit", event => {
   const product = products.find(item => String(item.id) === id);
   if (!product) return editDialog.close();
   const previous = { ...product };
+  const previousMovements = movements;
   product.nome = document.querySelector("#edit-nome").value.trim();
   product.preco = Number(document.querySelector("#edit-preco").value);
   product.quantidade = Number(document.querySelector("#edit-quantidade").value);
@@ -249,13 +331,68 @@ editForm.addEventListener("submit", event => {
     showStatus("Confira os dados do produto antes de salvar.", true);
     return;
   }
-  if (!saveProducts()) {
+  const quantityDifference = product.quantidade - previous.quantidade;
+  if (quantityDifference !== 0) {
+    const adjustment = makeMovement(product, "ajuste", Math.abs(quantityDifference), quantityDifference > 0 ? "Ajuste manual: aumento ao editar o produto" : "Ajuste manual: redução ao editar o produto");
+    movements = [adjustment, ...movements];
+  }
+  const saved = quantityDifference === 0 ? saveProducts() : saveInventory();
+  if (!saved) {
     Object.assign(product, previous);
+    movements = previousMovements;
     return;
   }
   editDialog.close();
   renderProducts();
-  showStatus(`${product.nome} foi atualizado.`);
+  showStatus(quantityDifference === 0 ? `${product.nome} foi atualizado.` : `${product.nome} foi atualizado e o ajuste entrou no histórico.`);
+});
+
+const movementDialog = document.querySelector("#movement-dialog");
+const movementForm = document.querySelector("#movement-form");
+const movementQuantityInput = document.querySelector("#movement-quantity");
+function openMovementDialog(product, type) {
+  document.querySelector("#movement-product-id").value = product.id;
+  document.querySelector("#movement-type").value = type;
+  document.querySelector("#movement-dialog-title").textContent = type === "entrada" ? "Registrar entrada" : "Registrar saída";
+  document.querySelector("#movement-submit").textContent = type === "entrada" ? "Confirmar entrada" : "Confirmar saída";
+  document.querySelector("#movement-product-info").textContent = `${product.nome} · ${product.quantidade} unidade(s) em estoque`;
+  movementQuantityInput.value = "";
+  if (type === "saida") movementQuantityInput.max = product.quantidade;
+  else movementQuantityInput.removeAttribute("max");
+  document.querySelector("#movement-note").value = "";
+  movementDialog.showModal();
+  movementQuantityInput.focus();
+}
+
+document.querySelector("#cancel-movement").addEventListener("click", () => movementDialog.close());
+document.querySelector("#close-movement").addEventListener("click", () => movementDialog.close());
+movementForm.addEventListener("submit", event => {
+  event.preventDefault();
+  if (!movementForm.reportValidity()) return;
+  const productId = document.querySelector("#movement-product-id").value;
+  const type = document.querySelector("#movement-type").value;
+  const product = products.find(item => String(item.id) === productId);
+  const amount = Number(movementQuantityInput.value);
+  if (!product || !Number.isInteger(amount) || amount < 1) return;
+  if (type === "saida" && amount > Number(product.quantidade)) {
+    movementQuantityInput.setCustomValidity("A saída não pode ser maior que o estoque disponível.");
+    movementQuantityInput.reportValidity();
+    movementQuantityInput.addEventListener("input", () => movementQuantityInput.setCustomValidity(""), { once: true });
+    return;
+  }
+  const previousQuantity = product.quantidade;
+  const previousMovements = movements;
+  product.quantidade = Number(product.quantidade) + (type === "entrada" ? amount : -amount);
+  const note = document.querySelector("#movement-note").value.trim();
+  movements = [makeMovement(product, type, amount, note), ...movements];
+  if (!saveInventory()) {
+    product.quantidade = previousQuantity;
+    movements = previousMovements;
+    return;
+  }
+  movementDialog.close();
+  renderProducts();
+  showStatus(`${type === "entrada" ? "Entrada" : "Saída"} de ${amount} unidade(s) registrada para ${product.nome}.`);
 });
 
 const backupFileInput = document.querySelector("#backup-file");
@@ -264,7 +401,8 @@ document.querySelector("#export-backup").addEventListener("click", () => {
     app: "Espetinhos do Claudio",
     version: 1,
     exportedAt: new Date().toISOString(),
-    products
+    products,
+    movements
   };
   const file = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(file);
@@ -291,6 +429,9 @@ backupFileInput.addEventListener("change", async () => {
     if (!backup.products.every(isValidProduct)) {
       throw new Error("O backup contém produtos com dados inválidos. Nenhuma alteração foi feita.");
     }
+    if (backup.movements !== undefined && (!Array.isArray(backup.movements) || !backup.movements.every(isValidMovement))) {
+      throw new Error("O backup contém movimentações inválidas. Nenhuma alteração foi feita.");
+    }
     const imported = backup.products.map(product => ({
       id: product.id === undefined || product.id === null ? newProductId() : String(product.id),
       nome: product.nome.trim(),
@@ -300,19 +441,31 @@ backupFileInput.addEventListener("change", async () => {
     }));
     const ids = new Set();
     for (const product of imported) {
-      if (!product.id || ids.has(product.id)) product.id = newProductId();
+      if (!product.id || ids.has(product.id)) throw new Error("O backup possui identificadores de produto repetidos ou inválidos.");
       ids.add(product.id);
     }
-    if (!window.confirm(`Este arquivo tem ${imported.length} produto(s). A importação vai substituir todo o estoque atual. Deseja continuar?`)) return;
-    const previous = products;
+    const importedMovements = (backup.movements || []).map(movement => ({
+      id: movement.id ? String(movement.id) : newProductId(),
+      productId: movement.productId === undefined ? "" : String(movement.productId),
+      productName: movement.productName.trim(),
+      type: movement.type,
+      quantity: Number(movement.quantity),
+      createdAt: movement.createdAt,
+      note: typeof movement.note === "string" ? movement.note : ""
+    })).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    if (!window.confirm(`Este arquivo tem ${imported.length} produto(s) e ${importedMovements.length} movimentação(ões). A importação vai substituir o estoque e o histórico atuais. Deseja continuar?`)) return;
+    const previousProducts = products;
+    const previousMovements = movements;
     products = imported;
-    if (!saveProducts()) {
-      products = previous;
+    movements = importedMovements;
+    if (!saveInventory()) {
+      products = previousProducts;
+      movements = previousMovements;
       return;
     }
     searchInput.value = "";
     renderProducts();
-    showStatus(`Backup importado: ${products.length} produto(s) restaurado(s).`);
+    showStatus(`Backup restaurado: ${products.length} produto(s) e ${movements.length} movimentação(ões).`);
   } catch (error) {
     showStatus(error instanceof SyntaxError ? "Não foi possível ler o arquivo. Escolha um backup JSON válido." : error.message, true);
   } finally {
@@ -322,6 +475,18 @@ backupFileInput.addEventListener("change", async () => {
 
 function newProductId() {
   return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function makeMovement(product, type, quantity, note = "") {
+  return {
+    id: newProductId(),
+    productId: String(product.id),
+    productName: product.nome,
+    type,
+    quantity: Number(quantity),
+    createdAt: new Date().toISOString(),
+    note: note.trim()
+  };
 }
 
 searchInput.addEventListener("input", renderProducts);

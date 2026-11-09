@@ -315,3 +315,61 @@ footer strong { color: var(--text); font-weight: 600; }
   .main-content .stats { grid-template-columns: 1fr; }
   .main-content .product-row { grid-template-columns: 1fr; }
 }
+
+/* Entradas, saídas e histórico */
+.icon-red { background: var(--red-soft); color: var(--red); font-size: 17px; }
+.movement-panel { margin-top: 16px; padding: 22px; }
+.movement-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.movement-heading .eyebrow { margin-bottom: 5px; }
+.movement-heading h2 { display: flex; align-items: center; gap: 8px; font-size: 17px; }
+.history-filter-label { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; }
+.history-filter { border: 1px solid var(--line); border-radius: 7px; background: var(--surface-soft); color: var(--text); padding: 7px 9px; font: 600 10px 'DM Sans', sans-serif; }
+.movement-list { display: grid; }
+.movement-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; min-height: 58px; padding: 9px 2px; border-top: 1px solid var(--line); }
+.movement-details { display: grid; gap: 4px; min-width: 0; }
+.movement-details strong { overflow-wrap: anywhere; font-size: 11px; }
+.movement-details > span { overflow-wrap: anywhere; color: var(--muted); font-size: 10px; }
+.movement-amount { flex: 0 0 auto; border-radius: 20px; padding: 5px 8px; font-size: 10px; font-weight: 700; }
+.movement-amount.entrada { background: var(--green-soft); color: var(--green); }
+.movement-amount.saida { background: var(--red-soft); color: var(--red); }
+.movement-amount.ajuste { background: var(--yellow-soft); color: var(--yellow); }
+.movement-empty { display: flex; align-items: center; gap: 12px; padding: 16px 0 7px; border-top: 1px solid var(--line); }
+.movement-empty > span { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border-radius: 50%; background: var(--surface-soft); color: var(--muted); font-size: 17px; }
+.movement-empty strong { font-size: 11px; }
+.movement-empty p { margin: 3px 0 0; color: var(--muted); font-size: 10px; }
+.history-note { margin: 12px 0 0; color: var(--muted); font-size: 9px; }
+.movement-buttons { display: flex; align-items: center; gap: 6px; }
+.movement-trigger { min-height: 29px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); font-size: 10px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: .18s; }
+.entry-trigger { color: var(--green); }
+.entry-trigger:hover:not(:disabled) { border-color: var(--green); background: var(--green-soft); }
+.exit-trigger { color: var(--red); }
+.exit-trigger:hover:not(:disabled) { border-color: var(--red); background: var(--red-soft); }
+.movement-trigger:disabled { opacity: .4; cursor: not-allowed; }
+.product-actions { gap: 8px; }
+.record-actions { gap: 4px; }
+.movement-product-info { margin: -5px 0 17px; padding: 10px 11px; border-radius: 7px; background: var(--surface-soft); color: var(--muted); font-size: 11px; }
+.movement-dialog #movement-quantity { margin-bottom: 16px; }
+.movement-dialog #movement-note { margin-bottom: 22px; }
+@media (max-width: 850px) {
+  .main-content .product-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .main-content .product-actions { grid-column: 1 / -1; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 9px; }
+}
+@media (max-width: 650px) {
+  .movement-panel { padding: 17px; }
+  .movement-heading { align-items: flex-start; }
+  .movement-heading h2 { font-size: 15px; }
+  .movement-heading .count-pill { display: none; }
+  .movement-buttons { gap: 5px; }
+  .movement-trigger { padding: 0 7px; font-size: 9px; }
+  .movement-row { gap: 8px; }
+}
+.movement-filters { display: flex; align-items: center; gap: 8px; }
+@media (max-width: 650px) {
+  .movement-heading { flex-direction: column; }
+  .movement-filters { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .history-filter-label { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .history-filter { width: 100%; }
+}
+@media (max-width: 360px) {
+  .main-content .product-row { grid-template-columns: 1fr; }
+}
