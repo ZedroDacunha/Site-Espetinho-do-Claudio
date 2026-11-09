@@ -68,11 +68,13 @@
             <article class="stat-card"><div class="stat-top"><span class="stat-label">Unidades em estoque</span><span class="stat-icon icon-green">▤</span></div><p class="stat-value" id="stat-units">0</p><p class="stat-note">unidades no total</p></article>
             <article class="stat-card"><div class="stat-top"><span class="stat-label">Valor em estoque</span><span class="stat-icon icon-yellow">R$</span></div><p class="stat-value" id="stat-value">R$ 0,00</p><p class="stat-note">considerando o preço cadastrado</p></article>
             <article class="stat-card"><div class="stat-top"><span class="stat-label">Precisam de reposição</span><span class="stat-icon icon-red">!</span></div><p class="stat-value" id="stat-low-count">0</p><p class="stat-note">no limite ou abaixo do mínimo</p></article>
+            <article class="stat-card"><div class="stat-top"><span class="stat-label">Saídas em 7 dias</span><span class="stat-icon icon-yellow">↓</span></div><p class="stat-value" id="stat-week-out">0</p><p class="stat-note" id="stat-week-out-note">unidades vendidas ou retiradas</p></article>
           </section>
 
           <section class="panel dashboard-panel" aria-labelledby="low-stock-title">
             <div class="dashboard-panel-heading"><div><p class="eyebrow">ATENÇÃO</p><h2 id="low-stock-title">Produtos para repor <span class="count-pill" id="low-stock-pill">0</span></h2></div><a class="text-link" href="#estoque" data-view-link>Ver estoque completo <span aria-hidden="true">→</span></a></div>
             <div class="low-stock-list" id="dashboard-low-stock"></div>
+            <div class="restock-actions" id="restock-actions" hidden><button class="secondary-button" id="copy-restock-list" type="button">Copiar lista de compra</button><span class="restock-note">Sugestão calculada pelo dobro do estoque mínimo, descontando o que já está em estoque.</span></div>
             <div class="low-stock-empty" id="low-stock-empty"><span aria-hidden="true">✓</span><div><strong>Estoque em dia!</strong><p>Nenhum produto precisa de reposição agora.</p></div></div>
           </section>
           <div class="quick-actions"><span>Precisa adicionar um item?</span><a class="primary-link" href="#cadastro" data-view-link><span aria-hidden="true">＋</span> Cadastrar produto</a></div>

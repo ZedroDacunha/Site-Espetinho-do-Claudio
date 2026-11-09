@@ -168,12 +168,49 @@ function updateSummary() {
     const name = document.createElement("strong");
     name.textContent = product.nome;
     const amount = document.createElement("span");
-    amount.textContent = `${product.quantidade} em estoque · mínimo ${product.minimo}`;
+    const suggestion = suggestedPurchase(product);
+    amount.textContent = `${product.quantidade} em estoque · mínimo ${product.minimo} · sugerido comprar ${suggestion}`;
     row.append(name, amount);
     return row;
   }));
   document.querySelector("#low-stock-empty").hidden = lowStockProducts.length > 0;
+  document.querySelector("#restock-actions").hidden = lowStockProducts.length === 0;
+
+  const weekOut = movements.reduce((total, movement) => {
+    if (movement.type !== "saida") return total;
+    return Date.parse(movement.createdAt) >= periodStart("7") ? total + Number(movement.quantity) : total;
+  }, 0);
+  document.querySelector("#stat-week-out").textContent = weekOut;
+  const weekNote = document.querySelector("#stat-week-out-note");
+  if (weekNote) weekNote.textContent = movements.some(movement => movement.type === "saida")
+    ? "unidades vendidas ou retiradas"
+    : "ainda sem saídas registradas";
 }
+
+function suggestedPurchase(product) {
+  const minimum = Number(product.minimo) || 0;
+  const quantity = Number(product.quantidade) || 0;
+  if (minimum <= 0) return quantity === 0 ? 1 : 0;
+  return Math.max(1, minimum * 2 - quantity);
+}
+
+function restockListText() {
+  return products.filter(needsRestock)
+    .map(product => `${suggestedPurchase(product)} un. - ${product.nome} (tem ${product.quantidade}, mínimo ${product.minimo})`)
+    .join("\n");
+}
+
+document.querySelector("#copy-restock-list").addEventListener("click", async () => {
+  const text = restockListText();
+  if (!text) return showStatus("Nenhum produto precisa de reposição agora.", true);
+  try {
+    await navigator.clipboard.writeText(text);
+    showStatus("Lista de compra copiada. Cole no WhatsApp ou nas notas.");
+  } catch (error) {
+    console.error("Não foi possível copiar a lista de compra.", error);
+    showStatus("Não foi possível copiar automaticamente. Confira a lista na tela.", true);
+  }
+});
 
 function createProductRow(product) {
   const row = document.createElement("article");
