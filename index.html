@@ -70,17 +70,24 @@
             <div class="inventory-list" id="lista-produtos" aria-live="polite"></div>
             <div class="empty-state" id="empty-state"><span class="empty-illustration" aria-hidden="true">📦</span><h3>Seu estoque começa aqui</h3><p>Cadastre o primeiro produto para acompanhar seus itens.</p><a class="text-link" href="#cadastro" data-view-link>Cadastrar produto <span aria-hidden="true">→</span></a></div>
           </section>
+          <section class="panel movement-panel" aria-labelledby="movement-history-title">
+            <div class="movement-heading"><div><p class="eyebrow">ACOMPANHAMENTO</p><h2 id="movement-history-title">Histórico de movimentações <span class="count-pill" id="movement-count">0</span></h2></div><div class="movement-filters"><label class="history-filter-label" for="movement-filter">Tipo<select class="history-filter" id="movement-filter"><option value="todas">Todos</option><option value="entrada">Entradas</option><option value="saida">Saídas</option><option value="ajuste">Ajustes</option></select></label><label class="history-filter-label" for="movement-product-filter">Produto<select class="history-filter" id="movement-product-filter"><option value="todos">Todos</option></select></label></div></div>
+            <div class="movement-list" id="movement-list" aria-live="polite"></div>
+            <div class="movement-empty" id="movement-empty"><span aria-hidden="true">↕</span><div><strong>Nenhuma movimentação ainda</strong><p>Quando você registrar uma entrada ou saída, ela aparecerá aqui.</p></div></div>
+            <p class="history-note">O histórico começa a ser registrado a partir de agora.</p>
+          </section>
+        </section>
         </section>
 
         <section class="view" id="importacoes" aria-labelledby="imports-title" hidden>
-          <div class="page-heading"><div><p class="eyebrow">CÓPIAS DE SEGURANÇA</p><h1 id="imports-title">Importações</h1><p class="intro-copy">Salve uma cópia dos produtos ou restaure um backup anterior.</p></div></div>
+          <div class="page-heading"><div><p class="eyebrow">CÓPIAS DE SEGURANÇA</p><h1 id="imports-title">Importações</h1><p class="intro-copy">Salve produtos e histórico ou restaure um backup anterior.</p></div></div>
           <section class="panel import-panel">
             <div class="import-intro"><span class="import-illustration" aria-hidden="true">🗂️</span><div><h2>Gerenciar backups</h2><p>O backup guarda os dados dos seus produtos em um arquivo que você pode salvar e levar para outro dispositivo.</p></div></div>
             <div class="backup-cards">
-              <article class="backup-card"><span class="backup-card-icon export-icon" aria-hidden="true">↓</span><h3>Exportar estoque</h3><p>Baixe agora uma cópia atualizada de todos os produtos cadastrados.</p><button class="primary-button" id="export-backup" type="button">Baixar backup</button></article>
+              <article class="backup-card"><span class="backup-card-icon export-icon" aria-hidden="true">↓</span><h3>Exportar estoque</h3><p>Baixe uma cópia atualizada dos produtos e do histórico de movimentações.</p><button class="primary-button" id="export-backup" type="button">Baixar backup</button></article>
               <article class="backup-card"><span class="backup-card-icon import-icon" aria-hidden="true">↑</span><h3>Importar backup</h3><p>Restaure seus produtos a partir de um arquivo de backup JSON salvo anteriormente.</p><button class="secondary-button" id="import-backup" type="button">Escolher arquivo</button><input id="backup-file" type="file" accept=".json,application/json" hidden></article>
             </div>
-            <div class="backup-warning"><span aria-hidden="true">ⓘ</span><p><strong>Importante:</strong> a importação substitui os produtos que estão neste navegador. Antes de continuar, você verá uma confirmação. Faça um backup atual para não perder alterações recentes.</p></div>
+            <div class="backup-warning"><span aria-hidden="true">ⓘ</span><p><strong>Importante:</strong> a importação substitui os produtos e o histórico que estão neste navegador. Antes de continuar, você verá uma confirmação. Faça um backup atual para não perder alterações recentes.</p></div>
           </section>
         </section>
 
@@ -114,6 +121,16 @@
         <div class="form-row"><div class="field-group"><label for="edit-preco">Preço de custo <span>(R$)</span></label><div class="input-wrap"><span class="input-prefix">R$</span><input id="edit-preco" type="number" min="0" step="0.01" required></div></div><div class="field-group"><label for="edit-quantidade">Quantidade</label><input id="edit-quantidade" type="number" min="0" step="1" required></div></div>
         <label for="edit-minimo">Estoque mínimo</label><input id="edit-minimo" type="number" min="0" step="1" required>
         <div class="dialog-actions"><button class="cancel-button" id="cancel-edit" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar alterações</button></div>
+      </form>
+    </dialog>
+    <dialog class="edit-dialog movement-dialog" id="movement-dialog" aria-labelledby="movement-dialog-title">
+      <form id="movement-form">
+        <div class="section-heading"><div><p class="eyebrow">MOVIMENTAÇÃO DE ESTOQUE</p><h2 id="movement-dialog-title">Registrar entrada</h2></div><button class="dialog-close" id="close-movement" type="button" aria-label="Fechar">×</button></div>
+        <input id="movement-product-id" type="hidden"><input id="movement-type" type="hidden">
+        <p class="movement-product-info" id="movement-product-info"></p>
+        <label for="movement-quantity">Quantidade de unidades</label><input id="movement-quantity" type="number" min="1" step="1" placeholder="Ex.: 5" required>
+        <label for="movement-note">Observação <span>(opcional)</span></label><input id="movement-note" type="text" maxlength="120" placeholder="Ex.: reposição do fornecedor">
+        <div class="dialog-actions"><button class="cancel-button" id="cancel-movement" type="button">Cancelar</button><button class="primary-button" id="movement-submit" type="submit">Confirmar entrada</button></div>
       </form>
     </dialog>
   </div>
