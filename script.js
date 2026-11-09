@@ -25,7 +25,10 @@ function loadProducts() {
 }
 
 function isValidProduct(product) {
-  return product && typeof product.nome === "string" && Number.isFinite(Number(product.preco)) && Number.isFinite(Number(product.quantidade));
+  return product && typeof product.nome === "string" && product.nome.trim().length > 0
+    && Number.isFinite(Number(product.preco)) && Number(product.preco) >= 0
+    && Number.isInteger(Number(product.quantidade)) && Number(product.quantidade) >= 0
+    && Number.isInteger(Number(product.minimo)) && Number(product.minimo) >= 0;
 }
 
 function saveProducts() {
@@ -100,13 +103,23 @@ function createProductRow(product) {
   increaseButton.addEventListener("click", () => changeQuantity(product.id, 1));
   controls.append(decreaseButton, amount, increaseButton);
 
+  const editButton = document.createElement("button");
+  editButton.className = "edit-button";
+  editButton.type = "button";
+  editButton.textContent = "Editar";
+  editButton.setAttribute("aria-label", `Editar ${product.nome}`);
+  editButton.addEventListener("click", () => openEditDialog(product));
+
   const removeButton = document.createElement("button");
   removeButton.className = "delete-button";
   removeButton.type = "button";
   removeButton.textContent = "Excluir";
   removeButton.setAttribute("aria-label", `Excluir ${product.nome}`);
   removeButton.addEventListener("click", () => removeProduct(product.id));
-  actions.append(controls, removeButton);
+  const recordActions = document.createElement("div");
+  recordActions.className = "record-actions";
+  recordActions.append(editButton, removeButton);
+  actions.append(controls, recordActions);
 
   row.append(details, badge, actions);
   return row;
@@ -146,17 +159,22 @@ function renderProducts() {
 function changeQuantity(id, amount) {
   const product = products.find(item => item.id === id);
   if (!product) return;
+  const previousQuantity = product.quantidade;
   product.quantidade = Math.max(0, Number(product.quantidade) + amount);
   if (saveProducts()) renderProducts();
+  else product.quantidade = previousQuantity;
 }
 
 function removeProduct(id) {
   const product = products.find(item => item.id === id);
   if (!product) return;
+  const previousProducts = products;
   products = products.filter(item => item.id !== id);
   if (saveProducts()) {
     renderProducts();
     showStatus(`${product.nome} foi excluído do estoque.`);
+  } else {
+    products = previousProducts;
   }
 }
 
@@ -164,22 +182,130 @@ form.addEventListener("submit", event => {
   event.preventDefault();
   if (!form.reportValidity()) return;
   const product = {
-    id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    id: newProductId(),
     nome: nomeInput.value.trim(),
     preco: Number(precoInput.value),
     quantidade: Number(quantidadeInput.value),
     minimo: Number(minimoInput.value)
   };
   if (!product.nome || product.preco < 0 || product.quantidade < 0 || product.minimo < 0) return;
-  products.unshift(product);
+  const previousProducts = products;
+  products = [product, ...products];
   if (saveProducts()) {
     renderProducts();
     form.reset();
     searchInput.value = "";
     nomeInput.focus();
     showStatus(`${product.nome} foi adicionado ao estoque.`);
+  } else {
+    products = previousProducts;
   }
 });
+
+function openEditDialog(product) {
+  document.querySelector("#edit-id").value = product.id;
+  document.querySelector("#edit-nome").value = product.nome;
+  document.querySelector("#edit-preco").value = product.preco;
+  document.querySelector("#edit-quantidade").value = product.quantidade;
+  document.querySelector("#edit-minimo").value = product.minimo;
+  document.querySelector("#edit-dialog").showModal();
+  document.querySelector("#edit-nome").focus();
+}
+
+const editDialog = document.querySelector("#edit-dialog");
+const editForm = document.querySelector("#edit-form");
+document.querySelector("#cancel-edit").addEventListener("click", () => editDialog.close());
+document.querySelector("#close-edit").addEventListener("click", () => editDialog.close());
+editForm.addEventListener("submit", event => {
+  event.preventDefault();
+  if (!editForm.reportValidity()) return;
+  const id = document.querySelector("#edit-id").value;
+  const product = products.find(item => String(item.id) === id);
+  if (!product) return editDialog.close();
+  const previous = { ...product };
+  product.nome = document.querySelector("#edit-nome").value.trim();
+  product.preco = Number(document.querySelector("#edit-preco").value);
+  product.quantidade = Number(document.querySelector("#edit-quantidade").value);
+  product.minimo = Number(document.querySelector("#edit-minimo").value);
+  if (!product.nome || !isValidProduct(product)) {
+    Object.assign(product, previous);
+    showStatus("Confira os dados do produto antes de salvar.", true);
+    return;
+  }
+  if (!saveProducts()) {
+    Object.assign(product, previous);
+    return;
+  }
+  editDialog.close();
+  renderProducts();
+  showStatus(`${product.nome} foi atualizado.`);
+});
+
+const backupFileInput = document.querySelector("#backup-file");
+document.querySelector("#export-backup").addEventListener("click", () => {
+  const backup = {
+    app: "Espetinhos do Claudio",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    products
+  };
+  const file = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `backup-espetinhos-claudio-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  showStatus("Backup exportado. Guarde o arquivo em um local seguro.");
+});
+
+document.querySelector("#import-backup").addEventListener("click", () => backupFileInput.click());
+backupFileInput.addEventListener("change", async () => {
+  const file = backupFileInput.files?.[0];
+  if (!file) return;
+  try {
+    if (file.size > 5 * 1024 * 1024) throw new Error("O arquivo é muito grande (limite de 5 MB).");
+    const backup = JSON.parse(await file.text());
+    if (!backup || backup.version !== 1 || !Array.isArray(backup.products)) {
+      throw new Error("Este arquivo não parece ser um backup válido do estoque.");
+    }
+    if (!backup.products.every(isValidProduct)) {
+      throw new Error("O backup contém produtos com dados inválidos. Nenhuma alteração foi feita.");
+    }
+    const imported = backup.products.map(product => ({
+      id: product.id === undefined || product.id === null ? newProductId() : String(product.id),
+      nome: product.nome.trim(),
+      preco: Number(product.preco),
+      quantidade: Number(product.quantidade),
+      minimo: Number(product.minimo)
+    }));
+    const ids = new Set();
+    for (const product of imported) {
+      if (!product.id || ids.has(product.id)) product.id = newProductId();
+      ids.add(product.id);
+    }
+    if (!window.confirm(`Este arquivo tem ${imported.length} produto(s). A importação vai substituir todo o estoque atual. Deseja continuar?`)) return;
+    const previous = products;
+    products = imported;
+    if (!saveProducts()) {
+      products = previous;
+      return;
+    }
+    searchInput.value = "";
+    renderProducts();
+    showStatus(`Backup importado: ${products.length} produto(s) restaurado(s).`);
+  } catch (error) {
+    showStatus(error instanceof SyntaxError ? "Não foi possível ler o arquivo. Escolha um backup JSON válido." : error.message, true);
+  } finally {
+    backupFileInput.value = "";
+  }
+});
+
+function newProductId() {
+  return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 searchInput.addEventListener("input", renderProducts);
 
