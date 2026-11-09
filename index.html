@@ -81,7 +81,14 @@
             <div class="section-heading">
               <div><p class="eyebrow">SEUS ITENS</p><h2 id="inventory-title">Lista de produtos <span class="count-pill" id="count-pill">0</span></h2></div>
             </div>
-            <label class="search-box" for="busca"><span aria-hidden="true">⌕</span><input id="busca" type="search" placeholder="Buscar produto..." autocomplete="off"><kbd>⌘ K</kbd></label>
+            <div class="inventory-tools">
+              <label class="search-box" for="busca"><span aria-hidden="true">⌕</span><input id="busca" type="search" placeholder="Buscar produto..." autocomplete="off"><kbd>⌘ K</kbd></label>
+              <div class="backup-actions">
+                <button class="utility-button" id="export-backup" type="button">↓ Exportar backup</button>
+                <button class="utility-button" id="import-backup" type="button">↑ Importar backup</button>
+                <input id="backup-file" type="file" accept=".json,application/json" hidden>
+              </div>
+            </div>
           </div>
           <div class="inventory-list" id="lista-produtos" aria-live="polite"></div>
           <div class="empty-state" id="empty-state">
@@ -92,6 +99,24 @@
           <p class="status-message" id="status-message" role="status" aria-live="polite"></p>
         </section>
       </section>
+      <dialog class="edit-dialog" id="edit-dialog" aria-labelledby="edit-title">
+        <form id="edit-form">
+          <div class="section-heading">
+            <div><p class="eyebrow">ATUALIZAR CADASTRO</p><h2 id="edit-title">Editar produto</h2></div>
+            <button class="dialog-close" id="close-edit" type="button" aria-label="Fechar">×</button>
+          </div>
+          <input id="edit-id" type="hidden">
+          <label for="edit-nome">Nome do produto</label>
+          <input id="edit-nome" type="text" maxlength="60" required autocomplete="off">
+          <div class="form-row">
+            <div class="field-group"><label for="edit-preco">Preço de custo <span>(R$)</span></label><div class="input-wrap"><span class="input-prefix">R$</span><input id="edit-preco" type="number" min="0" step="0.01" required></div></div>
+            <div class="field-group"><label for="edit-quantidade">Quantidade</label><input id="edit-quantidade" type="number" min="0" step="1" required></div>
+          </div>
+          <label for="edit-minimo">Estoque mínimo</label>
+          <input id="edit-minimo" type="number" min="0" step="1" required>
+          <div class="dialog-actions"><button class="cancel-button" id="cancel-edit" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar alterações</button></div>
+        </form>
+      </dialog>
       <footer>Feito para facilitar o dia a dia dos <strong>Espetinhos do Claudio</strong>.</footer>
     </main>
   </div>
