@@ -12,9 +12,19 @@ const productList = document.querySelector("#lista-produtos");
 const emptyState = document.querySelector("#empty-state");
 const statusMessage = document.querySelector("#status-message");
 const themeToggle = document.querySelector("#theme-toggle");
+const appShell = document.querySelector("#app-shell");
+const loginScreen = document.querySelector("#login-screen");
+const loginForm = document.querySelector("#login-form");
+const accessPassword = document.querySelector("#access-password");
+const loginError = document.querySelector("#login-error");
+const loginSubmit = document.querySelector("#login-submit");
+const logoutButton = document.querySelector("#logout-button");
 let products = loadProducts();
 let movements = loadMovements();
 let statusTimer;
+let serverAvailable = false;
+let isSaving = false;
+let serverRevision = "";
 
 function loadProducts() {
   try {
@@ -50,37 +60,77 @@ function isValidMovement(movement) {
     && typeof movement.createdAt === "string" && Number.isFinite(Date.parse(movement.createdAt));
 }
 
-function saveProducts() {
+function cacheState(state) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-    return true;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.products));
+    localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(state.movements));
   } catch (error) {
-    console.error("Não foi possível salvar os produtos.", error);
-    showStatus("Não foi possível salvar. Verifique o espaço disponível no navegador.", true);
-    return false;
+    console.warn("Não foi possível atualizar a cópia local do estoque.", error);
   }
 }
 
-function saveInventory() {
-  let previousProducts;
-  let previousMovements;
+async function putState(state) {
+  const response = await fetch("/api/state", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...state, revision: serverRevision })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.error || "O servidor recusou os dados.");
+    error.status = response.status;
+    throw error;
+  }
+  if (!data || !Array.isArray(data.products) || !Array.isArray(data.movements) || typeof data.revision !== "string") throw new Error("Resposta inválida do servidor.");
+  serverRevision = data.revision;
+  return data;
+}
+
+async function persistState() {
+  if (!serverAvailable || isSaving) return false;
+  const snapshot = { products: [...products], movements: [...movements] };
+  isSaving = true;
+  document.body.classList.add("saving-data");
   try {
-    previousProducts = localStorage.getItem(STORAGE_KEY);
-    previousMovements = localStorage.getItem(MOVEMENTS_KEY);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-    localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(movements));
+    const saved = await putState(snapshot);
+    serverRevision = saved.revision;
+    cacheState(saved);
     return true;
   } catch (error) {
-    console.error("Não foi possível salvar a movimentação.", error);
-    try {
-      if (previousProducts === null) localStorage.removeItem(STORAGE_KEY);
-      else if (previousProducts !== undefined) localStorage.setItem(STORAGE_KEY, previousProducts);
-      if (previousMovements === null) localStorage.removeItem(MOVEMENTS_KEY);
-      else if (previousMovements !== undefined) localStorage.setItem(MOVEMENTS_KEY, previousMovements);
-    } catch (_) { /* Tenta preservar a mensagem de erro mesmo se o navegador bloquear a restauração. */ }
-    showStatus("Não foi possível salvar a movimentação. Confira o espaço disponível no navegador.", true);
+    console.error("Não foi possível salvar no servidor.", error);
+    serverAvailable = false;
+    if (error.status === 401) {
+      appShell.hidden = true;
+      loginScreen.hidden = false;
+      loginError.textContent = "Sua sessão expirou. Entre novamente para continuar.";
+    }
+    document.body.classList.add("server-unavailable");
+    document.querySelector(".sidebar-note p").textContent = "Modo de consulta: servidor indisponível.";
+    const warning = document.querySelector("#connection-warning");
+    warning.textContent = error.status === 409
+      ? "O estoque foi alterado em outro acesso. Nenhuma alteração sua foi gravada; recarregue a página para buscar os dados mais recentes."
+      : "A conexão com o servidor foi perdida e não foi possível confirmar o salvamento. Recarregue a página e confira os dados antes de tentar novamente.";
+    warning.hidden = false;
+    showStatus("Não foi possível salvar no servidor.", true);
     return false;
+  } finally {
+    isSaving = false;
+    document.body.classList.remove("saving-data");
   }
+}
+
+function saveProducts() {
+  return persistState();
+}
+
+function saveInventory() {
+  return persistState();
+}
+
+function canMutate() {
+  if (serverAvailable && !isSaving) return true;
+  showStatus(serverAvailable ? "Aguarde o salvamento terminar." : "Sem conexão com o servidor: o estoque está somente para consulta.", true);
+  return false;
 }
 
 function formatMoney(value) {
@@ -260,12 +310,13 @@ function renderMovements() {
 document.querySelector("#movement-filter").addEventListener("change", renderMovements);
 document.querySelector("#movement-product-filter").addEventListener("change", renderMovements);
 
-function removeProduct(id) {
+async function removeProduct(id) {
+  if (!canMutate()) return;
   const product = products.find(item => item.id === id);
   if (!product) return;
   const previousProducts = products;
   products = products.filter(item => item.id !== id);
-  if (saveProducts()) {
+  if (await saveProducts()) {
     renderProducts();
     showStatus(`${product.nome} foi excluído do estoque.`);
   } else {
@@ -273,9 +324,9 @@ function removeProduct(id) {
   }
 }
 
-form.addEventListener("submit", event => {
+form.addEventListener("submit", async event => {
   event.preventDefault();
-  if (!form.reportValidity()) return;
+  if (!canMutate() || !form.reportValidity()) return;
   const product = {
     id: newProductId(),
     nome: nomeInput.value.trim(),
@@ -288,7 +339,7 @@ form.addEventListener("submit", event => {
   const previousMovements = movements;
   products = [product, ...products];
   if (product.quantidade > 0) movements = [makeMovement(product, "entrada", product.quantidade, "Estoque inicial no cadastro"), ...movements];
-  if (saveInventory()) {
+  if (await saveInventory()) {
     renderProducts();
     form.reset();
     searchInput.value = "";
@@ -314,9 +365,9 @@ const editDialog = document.querySelector("#edit-dialog");
 const editForm = document.querySelector("#edit-form");
 document.querySelector("#cancel-edit").addEventListener("click", () => editDialog.close());
 document.querySelector("#close-edit").addEventListener("click", () => editDialog.close());
-editForm.addEventListener("submit", event => {
+editForm.addEventListener("submit", async event => {
   event.preventDefault();
-  if (!editForm.reportValidity()) return;
+  if (!canMutate() || !editForm.reportValidity()) return;
   const id = document.querySelector("#edit-id").value;
   const product = products.find(item => String(item.id) === id);
   if (!product) return editDialog.close();
@@ -336,7 +387,7 @@ editForm.addEventListener("submit", event => {
     const adjustment = makeMovement(product, "ajuste", Math.abs(quantityDifference), quantityDifference > 0 ? "Ajuste manual: aumento ao editar o produto" : "Ajuste manual: redução ao editar o produto");
     movements = [adjustment, ...movements];
   }
-  const saved = quantityDifference === 0 ? saveProducts() : saveInventory();
+  const saved = await (quantityDifference === 0 ? saveProducts() : saveInventory());
   if (!saved) {
     Object.assign(product, previous);
     movements = previousMovements;
@@ -366,9 +417,9 @@ function openMovementDialog(product, type) {
 
 document.querySelector("#cancel-movement").addEventListener("click", () => movementDialog.close());
 document.querySelector("#close-movement").addEventListener("click", () => movementDialog.close());
-movementForm.addEventListener("submit", event => {
+movementForm.addEventListener("submit", async event => {
   event.preventDefault();
-  if (!movementForm.reportValidity()) return;
+  if (!canMutate() || !movementForm.reportValidity()) return;
   const productId = document.querySelector("#movement-product-id").value;
   const type = document.querySelector("#movement-type").value;
   const product = products.find(item => String(item.id) === productId);
@@ -385,7 +436,7 @@ movementForm.addEventListener("submit", event => {
   product.quantidade = Number(product.quantidade) + (type === "entrada" ? amount : -amount);
   const note = document.querySelector("#movement-note").value.trim();
   movements = [makeMovement(product, type, amount, note), ...movements];
-  if (!saveInventory()) {
+  if (!await saveInventory()) {
     product.quantidade = previousQuantity;
     movements = previousMovements;
     return;
@@ -454,11 +505,12 @@ backupFileInput.addEventListener("change", async () => {
       note: typeof movement.note === "string" ? movement.note : ""
     })).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
     if (!window.confirm(`Este arquivo tem ${imported.length} produto(s) e ${importedMovements.length} movimentação(ões). A importação vai substituir o estoque e o histórico atuais. Deseja continuar?`)) return;
+    if (!canMutate()) return;
     const previousProducts = products;
     const previousMovements = movements;
     products = imported;
     movements = importedMovements;
-    if (!saveInventory()) {
+    if (!await saveInventory()) {
       products = previousProducts;
       movements = previousMovements;
       return;
@@ -549,5 +601,113 @@ try {
 applyTheme(initialTheme);
 themeToggle.addEventListener("click", () => applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
 
+loginForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  loginError.textContent = "";
+  if (!loginForm.reportValidity()) return;
+  loginSubmit.disabled = true;
+  loginSubmit.textContent = "Verificando…";
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: accessPassword.value })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "Não foi possível entrar.");
+    accessPassword.value = "";
+    loginScreen.hidden = true;
+    appShell.hidden = false;
+    await initializeApp();
+  } catch (error) {
+    loginError.textContent = error.message || "Não foi possível conectar ao servidor.";
+  } finally {
+    loginSubmit.disabled = false;
+    loginSubmit.textContent = "Entrar no estoque";
+  }
+});
+
+logoutButton.addEventListener("click", async () => {
+  logoutButton.disabled = true;
+  try {
+    const response = await fetch("/api/auth/logout", { method: "POST" });
+    if (!response.ok) throw new Error("Não foi possível encerrar a sessão.");
+    serverAvailable = false;
+    appShell.hidden = true;
+    loginScreen.hidden = false;
+    loginError.textContent = "Você saiu do estoque.";
+  } catch (error) {
+    showStatus(error.message, true);
+  } finally {
+    logoutButton.disabled = false;
+  }
+});
+
+async function initializeApp() {
+  const main = document.querySelector(".main-content");
+  const loading = document.querySelector("#app-loading");
+  const warning = document.querySelector("#connection-warning");
+  document.body.classList.add("app-initializing");
+  loading.hidden = false;
+  try {
+    const sessionResponse = await fetch("/api/session", { cache: "no-store" });
+    if (!sessionResponse.ok) throw new Error("Não foi possível verificar a sessão.");
+    const session = await sessionResponse.json();
+    if (!session.authenticated) {
+      appShell.hidden = true;
+      loginScreen.hidden = false;
+      logoutButton.hidden = true;
+      loginError.textContent = "";
+      return;
+    }
+    appShell.hidden = false;
+    loginScreen.hidden = true;
+    logoutButton.hidden = !session.loginRequired;
+
+    const response = await fetch("/api/state", { cache: "no-store" });
+    if (!response.ok) throw new Error("O servidor não respondeu corretamente.");
+    let remoteState = await response.json();
+    if (!remoteState || !Array.isArray(remoteState.products) || !Array.isArray(remoteState.movements)) {
+      throw new Error("O servidor enviou dados em um formato inesperado.");
+    }
+
+    if (typeof remoteState.revision !== "string") throw new Error("O servidor não enviou a versão dos dados.");
+    serverRevision = remoteState.revision;
+    let migrated = false;
+    const localState = { products: loadProducts(), movements: loadMovements() };
+    if (remoteState.products.length === 0 && remoteState.movements.length === 0
+      && (localState.products.length > 0 || localState.movements.length > 0)) {
+      remoteState = await putState(localState);
+      migrated = true;
+    }
+    products = remoteState.products.filter(isValidProduct);
+    movements = remoteState.movements.filter(isValidMovement);
+    serverAvailable = true;
+    document.body.classList.remove("server-unavailable");
+    warning.hidden = true;
+    document.querySelector(".sidebar-note p").textContent = "Estoque salvo no servidor desta aplicação.";
+    cacheState({ products, movements });
+    showStatus(migrated ? "Os dados deste navegador foram transferidos para o servidor." : "Estoque carregado do servidor.");
+  } catch (error) {
+    console.error("Não foi possível conectar ao servidor do estoque.", error);
+    appShell.hidden = false;
+    loginScreen.hidden = true;
+    logoutButton.hidden = true;
+    products = loadProducts();
+    movements = loadMovements();
+    serverAvailable = false;
+    document.body.classList.add("server-unavailable");
+    document.querySelector(".sidebar-note p").textContent = "Modo de consulta: servidor indisponível.";
+    warning.textContent = "Servidor indisponível. Exibindo a última cópia local em modo de consulta; alterações não serão salvas. Inicie o servidor e recarregue a página.";
+    warning.hidden = false;
+    showStatus("Não foi possível conectar ao servidor.", true);
+  } finally {
+    renderProducts();
+    loading.hidden = true;
+    main.setAttribute("aria-busy", "false");
+    document.body.classList.remove("app-initializing");
+  }
+}
+
 document.querySelector("#today").textContent = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
-renderProducts();
+initializeApp();

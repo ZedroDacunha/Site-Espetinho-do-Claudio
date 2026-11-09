@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: espetinhos-do-claudio
+    runtime: node
+    region: virginia
+    plan: 0.5c-512mb
+    buildCommand: npm ci --prefix servidor
+    startCommand: npm start --prefix servidor
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: espetinhos-do-claudio-db
+          property: connectionString
+      - key: APP_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+
+databases:
+  - name: espetinhos-do-claudio-db
+    region: virginia
+    plan: 0.1c-256mb
+    diskSizeGB: 5
+    databaseName: espetinhos
+    user: espetinhos
+    ipAllowList: []

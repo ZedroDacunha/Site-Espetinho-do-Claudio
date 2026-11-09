@@ -13,7 +13,22 @@
   <script src="script.js" defer></script>
 </head>
 <body>
-  <div class="app-shell">
+  <section class="login-screen" id="login-screen" aria-labelledby="login-title" hidden>
+    <div class="login-card">
+      <span class="brand-mark login-mark" aria-hidden="true">🔥</span>
+      <p class="eyebrow">ESPETINHOS DO CLAUDIO</p>
+      <h1 id="login-title">Acesso ao estoque</h1>
+      <p class="login-description">Digite a senha compartilhada para abrir o painel.</p>
+      <form id="login-form">
+        <label for="access-password">Senha de acesso</label>
+        <input id="access-password" type="password" autocomplete="current-password" required>
+        <p class="login-error" id="login-error" role="alert"></p>
+        <button class="primary-button" id="login-submit" type="submit">Entrar no estoque</button>
+      </form>
+      <p class="privacy-note">Acesso privado dos Espetinhos do Claudio.</p>
+    </div>
+  </section>
+  <div class="app-shell" id="app-shell" hidden>
     <header class="topbar">
       <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar"><span></span><span></span><span></span></button>
       <a class="brand" href="#inicio" aria-label="Espetinhos do Claudio, início" data-view-link>
@@ -23,6 +38,7 @@
       <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Ativar modo escuro">
         <span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">Modo escuro</span>
       </button>
+      <button class="logout-button" id="logout-button" type="button" hidden>Sair</button>
     </header>
 
     <div class="app-layout">
@@ -35,11 +51,13 @@
           <a class="nav-link" href="#importacoes" data-view-link><span class="nav-icon" aria-hidden="true">↕</span><span>Importações</span></a>
           <a class="nav-link" href="#cadastro" data-view-link><span class="nav-icon" aria-hidden="true">＋</span><span>Cadastro</span></a>
         </nav>
-        <div class="sidebar-note"><span class="note-icon" aria-hidden="true">✓</span><p>Seus dados ficam salvos neste dispositivo.</p></div>
+        <div class="sidebar-note"><span class="note-icon" aria-hidden="true">✓</span><p>Estoque salvo no servidor desta aplicação.</p></div>
         <div class="sidebar-footer">ESPETINHOS DO CLAUDIO</div>
       </aside>
 
-      <main class="main-content">
+      <main class="main-content" aria-busy="true">
+        <div class="app-loading" id="app-loading" role="status">Conectando ao servidor para carregar o estoque…</div>
+        <div class="connection-warning" id="connection-warning" role="alert" hidden></div>
         <section class="view" id="inicio" aria-labelledby="home-title">
           <div class="page-heading">
             <div><p class="eyebrow"><span class="live-dot"></span> PAINEL DE CONTROLE</p><h1 id="home-title">Início</h1><p class="intro-copy">Aqui estão as informações mais importantes do seu estoque.</p></div>
@@ -104,7 +122,7 @@
               <label for="minimo">Avisar quando chegar a</label><input id="minimo" name="minimo" type="number" min="0" step="1" placeholder="Estoque mínimo (unidades)" required>
               <button class="primary-button" type="submit"><span aria-hidden="true">＋</span> Cadastrar produto</button>
             </form>
-            <p class="privacy-note"><span aria-hidden="true">✓</span> Os dados são salvos automaticamente neste dispositivo.</p>
+            <p class="privacy-note"><span aria-hidden="true">✓</span> Os dados são gravados automaticamente no servidor.</p>
           </section>
         </section>
 
