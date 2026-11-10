@@ -2,6 +2,9 @@ const STORAGE_KEY = "espetinhos-claudio-produtos-v1";
 const MOVEMENTS_KEY = "espetinhos-claudio-movimentacoes-v1";
 const THEME_KEY = "espetinhos-claudio-tema";
 const SIMPLE_MODE_KEY = "espetinhos-claudio-modo-simples";
+const SUPPLIES_KEY = "espetinhos-claudio-insumos-v1";
+const SUPPLY_MOVEMENTS_KEY = "espetinhos-claudio-insumos-mov-v1";
+const SUPPLY_UNITS = { un: "un.", kg: "kg", g: "g", pacote: "pac.", litro: "L" };
 const BACKUP_KEY = "espetinhos-claudio-ultimo-backup";
 
 const form = document.querySelector("#form-produto");
@@ -23,6 +26,8 @@ const loginSubmit = document.querySelector("#login-submit");
 const logoutButton = document.querySelector("#logout-button");
 let products = loadProducts();
 let movements = loadMovements();
+let supplies = loadSupplies();
+let supplyMovements = loadSupplyMovements();
 let statusTimer;
 let serverAvailable = false;
 let isSaving = false;
@@ -63,10 +68,72 @@ function isValidMovement(movement) {
     && typeof movement.createdAt === "string" && Number.isFinite(Date.parse(movement.createdAt));
 }
 
+function isValidSupply(item) {
+  return item && typeof item.nome === "string" && item.nome.trim().length > 0
+    && Object.prototype.hasOwnProperty.call(SUPPLY_UNITS, item.unidade)
+    && Number.isFinite(Number(item.minimo)) && Number(item.minimo) >= 0;
+}
+
+function isValidSupplyMovement(movement) {
+  return movement && typeof movement.supplyName === "string"
+    && ["entrada", "saida", "ajuste"].includes(movement.type)
+    && Number.isFinite(Number(movement.quantity)) && Number(movement.quantity) > 0
+    && Object.prototype.hasOwnProperty.call(SUPPLY_UNITS, movement.unidade)
+    && typeof movement.createdAt === "string" && Number.isFinite(Date.parse(movement.createdAt));
+}
+
+function loadSupplies() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SUPPLIES_KEY) || "[]");
+    return Array.isArray(saved) ? saved.filter(isValidSupply) : [];
+  } catch (error) {
+    console.error("Não foi possível ler os insumos salvos.", error);
+    return [];
+  }
+}
+
+function loadSupplyMovements() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SUPPLY_MOVEMENTS_KEY) || "[]");
+    return Array.isArray(saved) ? saved.filter(isValidSupplyMovement).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)) : [];
+  } catch (error) {
+    console.error("Não foi possível ler o histórico de insumos.", error);
+    return [];
+  }
+}
+
+function findSupply(id) {
+  return supplies.find(item => String(item.id) === String(id));
+}
+
+function supplyBalance(id) {
+  return supplyMovements.reduce((total, movement) => {
+    if (String(movement.supplyId) !== String(id)) return total;
+    if (movement.type === "entrada") return total + Number(movement.quantity);
+    if (movement.type === "saida") return total - Number(movement.quantity);
+    return total;
+  }, 0);
+}
+
+function supplyStock(item) {
+  return Math.max(0, Math.round(supplyBalance(item.id) * 100) / 100);
+}
+
+function supplyNeedsRestock(item) {
+  return supplyStock(item) <= Number(item.minimo);
+}
+
+function formatSupplyAmount(value, unit) {
+  const number = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(Number(value));
+  return `${number} ${SUPPLY_UNITS[unit] || "un."}`;
+}
+
 function cacheState(state) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.products));
     localStorage.setItem(MOVEMENTS_KEY, JSON.stringify(state.movements));
+    localStorage.setItem(SUPPLIES_KEY, JSON.stringify(state.supplies || []));
+    localStorage.setItem(SUPPLY_MOVEMENTS_KEY, JSON.stringify(state.supplyMovements || []));
   } catch (error) {
     console.warn("Não foi possível atualizar a cópia local do estoque.", error);
   }
@@ -76,7 +143,12 @@ async function putState(state) {
   const response = await fetch("/api/state", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...state, revision: serverRevision })
+    body: JSON.stringify({
+      ...state,
+      supplies: state.supplies || supplies,
+      supplyMovements: state.supplyMovements || supplyMovements,
+      revision: serverRevision
+    })
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -91,7 +163,7 @@ async function putState(state) {
 
 async function persistState() {
   if (!serverAvailable || isSaving) return false;
-  const snapshot = { products: [...products], movements: [...movements] };
+  const snapshot = { products: [...products], movements: [...movements], supplies: [...supplies], supplyMovements: [...supplyMovements] };
   isSaving = true;
   pendingCount += 1;
   if (pendingCount === 1) window.addEventListener("beforeunload", warnUnsaved);
@@ -329,6 +401,7 @@ function renderProducts() {
   updateSummary();
   renderMovements();
   renderReport();
+  renderSupplies();
 }
 
 function periodStart(period) {
@@ -680,6 +753,277 @@ movementForm.addEventListener("submit", async event => {
   showStatus(`${type === "entrada" ? "Entrada" : "Saída"} de ${amount} un. salva em ${product.nome}.${backupReminder()}`);
 });
 
+/* ---------- Insumos ---------- */
+const supplyList = document.querySelector("#lista-insumos");
+const supplySearch = document.querySelector("#busca-insumos");
+const supplyDialog = document.querySelector("#supply-dialog");
+const supplyForm = document.querySelector("#supply-form");
+const supplyMovementDialog = document.querySelector("#supply-movement-dialog");
+const supplyMovementForm = document.querySelector("#supply-movement-form");
+const supplyQuantityInput = document.querySelector("#supply-movement-quantity");
+const supplyDisplay = document.querySelector("#supply-display");
+const supplyDisplayUnit = document.querySelector("#supply-display-unit");
+const supplyPreview = document.querySelector("#supply-movement-preview");
+let supplyRawAmount = "";
+
+function supplyBadge(item) {
+  const badge = document.createElement("span");
+  const stock = supplyStock(item);
+  const minimum = Number(item.minimo);
+  badge.className = "stock-badge";
+  if (stock <= 0) {
+    badge.classList.add("empty");
+    badge.textContent = "● Acabou";
+  } else if (stock <= minimum) {
+    badge.classList.add("low");
+    badge.textContent = "● Está acabando";
+  } else {
+    badge.textContent = "● Tem";
+  }
+  return badge;
+}
+
+function createSupplyRow(item) {
+  const row = document.createElement("article");
+  row.className = "product-row supply-row";
+
+  const details = document.createElement("div");
+  const name = document.createElement("p");
+  name.className = "product-name";
+  name.textContent = item.nome;
+  const meta = document.createElement("span");
+  meta.className = "product-price";
+  const minimum = Number(item.minimo);
+  meta.textContent = `Avisar quando chegar em ${formatSupplyAmount(minimum, item.unidade)}`;
+  details.append(name, meta);
+
+  const amount = document.createElement("span");
+  amount.className = "supply-amount";
+  amount.textContent = formatSupplyAmount(supplyStock(item), item.unidade);
+
+  const actions = document.createElement("div");
+  actions.className = "product-actions";
+  const movementButtons = document.createElement("div");
+  movementButtons.className = "movement-buttons";
+  const entryButton = document.createElement("button");
+  entryButton.type = "button";
+  entryButton.className = "movement-trigger entry-trigger";
+  entryButton.textContent = "+ Entrada";
+  entryButton.addEventListener("click", () => openSupplyMovement(item, "entrada"));
+  const exitButton = document.createElement("button");
+  exitButton.type = "button";
+  exitButton.className = "movement-trigger exit-trigger";
+  exitButton.textContent = "− Saída";
+  exitButton.disabled = supplyStock(item) <= 0;
+  exitButton.addEventListener("click", () => openSupplyMovement(item, "saida"));
+  movementButtons.append(entryButton, exitButton);
+  const recordActions = document.createElement("div");
+  recordActions.className = "record-actions";
+  const editButton = document.createElement("button");
+  editButton.type = "button";
+  editButton.className = "edit-button";
+  editButton.textContent = "Editar";
+  editButton.addEventListener("click", () => openSupplyDialog(item));
+  const removeButton = document.createElement("button");
+  removeButton.type = "button";
+  removeButton.className = "delete-button";
+  removeButton.textContent = "Excluir";
+  removeButton.addEventListener("click", () => removeSupply(item));
+  recordActions.append(editButton, removeButton);
+  actions.append(movementButtons, recordActions);
+
+  row.append(details, supplyBadge(item), amount, actions);
+  return row;
+}
+
+function renderSupplies() {
+  if (!supplyList) return;
+  const query = supplySearch.value.trim().toLocaleLowerCase("pt-BR");
+  const filtered = supplies.filter(item => item.nome.toLocaleLowerCase("pt-BR").includes(query));
+  const ordered = [...filtered].sort((a, b) => Number(supplyNeedsRestock(b)) - Number(supplyNeedsRestock(a))
+    || a.nome.localeCompare(b.nome, "pt-BR"));
+  supplyList.replaceChildren(...ordered.map(createSupplyRow));
+  supplyList.classList.add("product-list");
+  const empty = document.querySelector("#supply-empty-state");
+  const noResults = document.querySelector("#supply-no-results");
+  if (empty) empty.hidden = supplies.length > 0;
+  const footer = document.querySelector(".supply-footer");
+  if (footer) footer.hidden = supplies.length === 0;
+  if (supplies.length > 0 && ordered.length === 0) {
+    if (noResults) noResults.hidden = false;
+    else {
+      const message = document.createElement("p");
+      message.id = "supply-no-results";
+      message.className = "empty-state";
+      message.textContent = "Nenhum insumo encontrado com esse nome.";
+      supplyList.after(message);
+    }
+  } else if (noResults) {
+    noResults.hidden = true;
+  }
+
+  document.querySelector("#supply-count-pill").textContent = supplies.length;
+  document.querySelector("#nav-supply-count").textContent = supplies.length;
+
+  const missing = supplies.filter(supplyNeedsRestock)
+    .sort((a, b) => supplyStock(a) - supplyStock(b) || a.nome.localeCompare(b.nome, "pt-BR"));
+  const alertPanel = document.querySelector("#supplies-alert");
+  const alertList = document.querySelector("#supplies-alert-list");
+  document.querySelector("#supplies-alert-pill").textContent = missing.length;
+  if (alertPanel) alertPanel.hidden = missing.length === 0;
+  if (alertList) {
+    alertList.replaceChildren(...missing.map(item => {
+      const row = document.createElement("div");
+      row.className = "low-stock-row";
+      const name = document.createElement("strong");
+      name.textContent = item.nome;
+      const amount = document.createElement("span");
+      amount.textContent = `${formatSupplyAmount(supplyStock(item), item.unidade)} · aviso em ${formatSupplyAmount(item.minimo, item.unidade)}`;
+      row.append(name, amount);
+      return row;
+    }));
+  }
+}
+
+function openSupplyDialog(item = null) {
+  document.querySelector("#supply-dialog-title").textContent = item ? "Editar insumo" : "Cadastrar insumo";
+  document.querySelector("#supply-id").value = item ? item.id : "";
+  document.querySelector("#supply-name").value = item ? item.nome : "";
+  document.querySelector("#supply-unit").value = item ? item.unidade : "un";
+  document.querySelector("#supply-minimum").value = item ? item.minimo : "";
+  supplyDialog.showModal();
+  document.querySelector("#supply-name").focus();
+}
+
+document.querySelector("#new-supply").addEventListener("click", () => openSupplyDialog());
+document.querySelector("#new-supply-footer").addEventListener("click", () => openSupplyDialog());
+document.querySelector("#close-supply").addEventListener("click", () => supplyDialog.close());
+document.querySelector("#cancel-supply").addEventListener("click", () => supplyDialog.close());
+if (supplySearch) supplySearch.addEventListener("input", renderSupplies);
+
+supplyForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!canMutate() || !supplyForm.reportValidity()) return;
+  const id = document.querySelector("#supply-id").value;
+  const nome = document.querySelector("#supply-name").value.trim();
+  const unidade = document.querySelector("#supply-unit").value;
+  const minimo = Number(document.querySelector("#supply-minimum").value);
+  if (!nome || !Object.prototype.hasOwnProperty.call(SUPPLY_UNITS, unidade) || !Number.isFinite(minimo) || minimo < 0) {
+    showStatus("Confira o nome, a medida e o aviso mínimo.", true);
+    return;
+  }
+  const previousSupplies = supplies;
+  if (id) {
+    supplies = supplies.map(item => String(item.id) === id ? { ...item, nome, unidade } : item);
+    const target = findSupply(id);
+    if (target) target.minimo = minimo;
+    if (!await saveInventory()) { supplies = previousSupplies; return; }
+    supplyDialog.close();
+    renderSupplies();
+    showStatus(`${nome} atualizado.`);
+  } else {
+    supplies = [...supplies, { id: newProductId(), nome, unidade, minimo }];
+    if (!await saveInventory()) { supplies = previousSupplies; return; }
+    supplyDialog.close();
+    renderSupplies();
+    showStatus(`${nome} cadastrado.${backupReminder()}`);
+  }
+});
+
+async function removeSupply(item) {
+  if (!canMutate()) return;
+  if (!window.confirm(`Excluir ${item.nome}? O histórico de movimentações dele continua guardado.`)) return;
+  const previousSupplies = supplies;
+  supplies = supplies.filter(entry => String(entry.id) !== String(item.id));
+  if (!await saveInventory()) { supplies = previousSupplies; return; }
+  renderSupplies();
+  showStatus(`${item.nome} excluído.`);
+}
+
+function updateSupplyPreview(type) {
+  const id = document.querySelector("#supply-movement-id").value;
+  const item = findSupply(id);
+  if (!item) return;
+  const current = supplyStock(item);
+  const amount = Number(supplyRawAmount.replace(",", "."));
+  const next = Number.isFinite(amount) && amount > 0
+    ? (type === "entrada" ? current + amount : current - amount)
+    : current;
+  supplyPreview.textContent = next < 0
+    ? "Quantidade maior do que tem no estoque."
+    : `Depois de salvar: ${formatSupplyAmount(current, item.unidade)} → ${formatSupplyAmount(Math.max(0, next), item.unidade)}`;
+  supplyPreview.classList.toggle("invalid", next < 0);
+}
+
+function openSupplyMovement(item, type) {
+  document.querySelector("#supply-movement-id").value = item.id;
+  document.querySelector("#supply-movement-type").value = type;
+  document.querySelector("#supply-movement-title").textContent = type === "entrada" ? "Entrada de insumo" : "Saída de insumo";
+  document.querySelector("#supply-movement-submit").textContent = type === "entrada" ? "Confirmar entrada" : "Confirmar saída";
+  document.querySelector("#supply-movement-info").textContent = `${item.nome} · ${formatSupplyAmount(supplyStock(item), item.unidade)} em estoque`;
+  document.querySelector("#supply-movement-note").value = "";
+  supplyDisplayUnit.textContent = SUPPLY_UNITS[item.unidade];
+  supplyRawAmount = "";
+  supplyQuantityInput.value = "";
+  supplyDisplay.textContent = "0";
+  updateSupplyPreview(type);
+  supplyMovementDialog.showModal();
+}
+
+document.querySelector("#supply-keypad").addEventListener("click", event => {
+  const button = event.target.closest("[data-key]");
+  if (!button) return;
+  const key = button.dataset.key;
+  if (key === "back") supplyRawAmount = supplyRawAmount.slice(0, -1);
+  else if (key === "comma") {
+    if (!supplyRawAmount.includes(",")) supplyRawAmount = supplyRawAmount === "" ? "0," : `${supplyRawAmount},`;
+  } else if (supplyRawAmount.replace(",", "").length < 6) {
+    supplyRawAmount = supplyRawAmount === "0" && key !== "0" ? key : `${supplyRawAmount}${key}`;
+  }
+  supplyDisplay.textContent = supplyRawAmount || "0";
+  supplyQuantityInput.value = supplyRawAmount.replace(",", ".");
+  updateSupplyPreview(document.querySelector("#supply-movement-type").value);
+});
+
+document.querySelector("#close-supply-movement").addEventListener("click", () => supplyMovementDialog.close());
+document.querySelector("#cancel-supply-movement").addEventListener("click", () => supplyMovementDialog.close());
+
+supplyMovementForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!canMutate() || !supplyMovementForm.reportValidity()) return;
+  const id = document.querySelector("#supply-movement-id").value;
+  const type = document.querySelector("#supply-movement-type").value;
+  const item = findSupply(id);
+  const amount = Math.round((Number(supplyRawAmount.replace(",", ".")) || Number(supplyQuantityInput.value)) * 100) / 100;
+  if (!item || !Number.isFinite(amount) || amount <= 0) {
+    showStatus("Digite a quantidade.", true);
+    return;
+  }
+  if (type === "saida" && amount > supplyStock(item) + 0.001) {
+    showStatus("A saída é maior do que o estoque deste insumo.", true);
+    return;
+  }
+  const note = document.querySelector("#supply-movement-note").value.trim();
+  const previousMovements = supplyMovements;
+  supplyMovements = [{
+    id: newProductId(),
+    supplyId: String(item.id),
+    supplyName: item.nome,
+    type,
+    quantity: amount,
+    unidade: item.unidade,
+    createdAt: new Date().toISOString(),
+    note
+  }, ...supplyMovements];
+  if (!await saveInventory()) {
+    supplyMovements = previousMovements;
+    return;
+  }
+  supplyMovementDialog.close();
+  renderSupplies();
+  showStatus(`${type === "entrada" ? "Entrada" : "Saída"} de ${formatSupplyAmount(amount, item.unidade)} salva em ${item.nome}.${backupReminder()}`);
+});
+
 const backupFileInput = document.querySelector("#backup-file");
 document.querySelector("#export-backup").addEventListener("click", () => {
   const backup = {
@@ -687,7 +1031,9 @@ document.querySelector("#export-backup").addEventListener("click", () => {
     version: 1,
     exportedAt: new Date().toISOString(),
     products,
-    movements
+    movements,
+    supplies,
+    supplyMovements
   };
   const file = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(file);
@@ -758,6 +1104,34 @@ backupFileInput.addEventListener("change", async () => {
       if (!product.id || ids.has(product.id)) throw new Error("O backup possui identificadores de produto repetidos ou inválidos.");
       ids.add(product.id);
     }
+    let importedSupplies = [];
+    let importedSupplyMovements = [];
+    if (backup.supplies !== undefined) {
+      if (!Array.isArray(backup.supplies) || !backup.supplies.every(isValidSupply)) {
+        throw new Error("O backup contém insumos inválidos. Nenhuma alteração foi feita.");
+      }
+      importedSupplies = backup.supplies.map(item => ({
+        id: item.id === undefined || item.id === null ? newProductId() : String(item.id),
+        nome: item.nome.trim(),
+        unidade: item.unidade,
+        minimo: Number(item.minimo)
+      }));
+    }
+    if (backup.supplyMovements !== undefined) {
+      if (!Array.isArray(backup.supplyMovements) || !backup.supplyMovements.every(isValidSupplyMovement)) {
+        throw new Error("O backup contém movimentações de insumos inválidas. Nenhuma alteração foi feita.");
+      }
+      importedSupplyMovements = backup.supplyMovements.map(movement => ({
+        id: movement.id ? String(movement.id) : newProductId(),
+        supplyId: movement.supplyId === undefined ? "" : String(movement.supplyId),
+        supplyName: movement.supplyName.trim(),
+        type: movement.type,
+        quantity: Number(movement.quantity),
+        unidade: movement.unidade,
+        createdAt: movement.createdAt,
+        note: typeof movement.note === "string" ? movement.note : ""
+      })).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    }
     const importedMovements = (backup.movements || []).map(movement => ({
       id: movement.id ? String(movement.id) : newProductId(),
       productId: movement.productId === undefined ? "" : String(movement.productId),
@@ -771,11 +1145,17 @@ backupFileInput.addEventListener("change", async () => {
     if (!canMutate()) return;
     const previousProducts = products;
     const previousMovements = movements;
+    const previousSupplies = supplies;
+    const previousSupplyMovements = supplyMovements;
     products = imported;
     movements = importedMovements;
+    supplies = importedSupplies;
+    supplyMovements = importedSupplyMovements;
     if (!await saveInventory()) {
       products = previousProducts;
       movements = previousMovements;
+      supplies = previousSupplies;
+      supplyMovements = previousSupplyMovements;
       return;
     }
     searchInput.value = "";
@@ -807,7 +1187,7 @@ function makeMovement(product, type, quantity, note = "") {
 searchInput.addEventListener("input", renderProducts);
 
 
-const validViews = new Set(["inicio", "estoque", "importacoes", "cadastro"]);
+const validViews = new Set(["inicio", "estoque", "insumos", "importacoes", "cadastro"]);
 function activateView(viewName) {
   const activeView = validViews.has(viewName) ? viewName : "inicio";
   document.querySelectorAll(".view").forEach(view => { view.hidden = view.id !== activeView; });
@@ -944,19 +1324,28 @@ async function initializeApp() {
     if (typeof remoteState.revision !== "string") throw new Error("O servidor não enviou a versão dos dados.");
     serverRevision = remoteState.revision;
     let migrated = false;
-    const localState = { products: loadProducts(), movements: loadMovements() };
+    const localState = { products: loadProducts(), movements: loadMovements(), supplies: loadSupplies(), supplyMovements: loadSupplyMovements() };
     if (remoteState.products.length === 0 && remoteState.movements.length === 0
       && (localState.products.length > 0 || localState.movements.length > 0)) {
       remoteState = await putState(localState);
       migrated = true;
     }
+    const remoteSupplies = Array.isArray(remoteState.supplies) ? remoteState.supplies : [];
+    const remoteSupplyMovements = Array.isArray(remoteState.supplyMovements) ? remoteState.supplyMovements : [];
+    if (remoteSupplies.length === 0 && remoteSupplyMovements.length === 0
+      && (localState.supplies.length > 0 || localState.supplyMovements.length > 0)) {
+      remoteState = await putState({ ...remoteState, supplies: localState.supplies, supplyMovements: localState.supplyMovements });
+      migrated = true;
+    }
     products = remoteState.products.filter(isValidProduct);
     movements = remoteState.movements.filter(isValidMovement);
+    supplies = (remoteState.supplies || []).filter(isValidSupply);
+    supplyMovements = (remoteState.supplyMovements || []).filter(isValidSupplyMovement);
     serverAvailable = true;
     document.body.classList.remove("server-unavailable");
     warning.hidden = true;
     document.querySelector(".sidebar-note p").textContent = "Estoque salvo no servidor desta aplicação.";
-    cacheState({ products, movements });
+    cacheState({ products, movements, supplies, supplyMovements });
     showStatus(migrated ? "Os dados deste navegador foram transferidos para o servidor." : "Estoque carregado do servidor.");
   } catch (error) {
     console.error("Não foi possível conectar ao servidor do estoque.", error);
@@ -965,6 +1354,8 @@ async function initializeApp() {
     logoutButton.hidden = true;
     products = loadProducts();
     movements = loadMovements();
+    supplies = loadSupplies();
+    supplyMovements = loadSupplyMovements();
     serverAvailable = false;
     document.body.classList.add("server-unavailable");
     document.querySelector(".sidebar-note p").textContent = "Modo de consulta: servidor indisponível.";

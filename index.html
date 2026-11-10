@@ -48,6 +48,7 @@
         <nav class="side-nav">
           <a class="nav-link" href="#inicio" data-view-link><span class="nav-icon" aria-hidden="true">⌂</span><span>Início</span></a>
           <a class="nav-link" href="#estoque" data-view-link><span class="nav-icon" aria-hidden="true">▦</span><span>Estoque</span><span class="nav-badge" id="nav-product-count">0</span></a>
+          <a class="nav-link" href="#insumos" data-view-link><span class="nav-icon" aria-hidden="true">🧺</span><span>Insumos</span><span class="nav-badge" id="nav-supply-count">0</span></a>
           <a class="nav-link" href="#importacoes" data-view-link><span class="nav-icon" aria-hidden="true">↕</span><span>Importações</span></a>
           <a class="nav-link" href="#cadastro" data-view-link><span class="nav-icon" aria-hidden="true">＋</span><span>Cadastro</span></a>
         </nav>
@@ -75,6 +76,10 @@
             <div class="low-stock-list" id="dashboard-low-stock"></div>
             <div class="restock-actions" id="restock-actions" hidden><button class="secondary-button" id="copy-restock-list" type="button">Copiar lista de compra</button></div>
             <div class="low-stock-empty" id="low-stock-empty"><span aria-hidden="true">✓</span><div><strong>Estoque em dia!</strong><p>Nenhum produto precisa de reposição agora.</p></div></div>
+          </section>
+          <section class="panel dashboard-panel" id="supplies-alert" aria-labelledby="supplies-alert-title" hidden>
+            <div class="dashboard-panel-heading"><div><h2 id="supplies-alert-title">Comprar insumos <span class="count-pill" id="supplies-alert-pill">0</span></h2></div><a class="text-link" href="#insumos" data-view-link>Ver insumos <span aria-hidden="true">→</span></a></div>
+            <div class="low-stock-list" id="supplies-alert-list"></div>
           </section>
           <div class="quick-actions"><a class="primary-link" href="#cadastro" data-view-link><span aria-hidden="true">＋</span> Cadastrar produto</a></div>
         </section>
@@ -106,6 +111,19 @@
           </section>
             </div>
           </details>
+        </section>
+
+        <section class="view" id="insumos" aria-labelledby="supplies-title" hidden>
+          <div class="page-heading"><div><h1 id="supplies-title">Insumos</h1><p class="intro-copy">Material usado no dia a dia: carne, palito, embalagem, sacola.</p></div></div>
+          <section class="panel inventory-panel">
+            <div class="inventory-heading">
+              <div class="section-heading"><h2>Lista de insumos <span class="count-pill" id="supply-count-pill">0</span></h2></div>
+              <label class="search-box" for="busca-insumos"><span aria-hidden="true">⌕</span><input id="busca-insumos" type="search" placeholder="Buscar insumo" autocomplete="off"></label>
+            </div>
+            <div class="inventory-list" id="lista-insumos" aria-live="polite"></div>
+            <div class="empty-state" id="supply-empty-state"><span class="empty-illustration" aria-hidden="true">🧺</span><h3>Nenhum insumo cadastrado</h3><p>Cadastre o que você compra para fazer os espetinhos.</p><button class="primary-button" id="new-supply" type="button">Cadastrar insumo</button></div>
+            <div class="supply-footer"><button class="secondary-button" id="new-supply-footer" type="button">＋ Cadastrar insumo</button></div>
+          </section>
         </section>
 
         <section class="view" id="importacoes" aria-labelledby="imports-title" hidden>
@@ -169,6 +187,38 @@
         <p class="movement-preview" id="movement-amount-preview"></p>
         <label for="movement-note">Observação <span>(opcional)</span></label><input id="movement-note" type="text" maxlength="120" placeholder="Ex.: reposição do fornecedor">
         <div class="dialog-actions"><button class="cancel-button" id="cancel-movement" type="button">Cancelar</button><button class="primary-button" id="movement-submit" type="submit">Confirmar entrada</button></div>
+      </form>
+    </dialog>
+    <dialog class="edit-dialog" id="supply-dialog" aria-labelledby="supply-dialog-title">
+      <form id="supply-form">
+        <div class="section-heading"><div><p class="eyebrow">INSUMO</p><h2 id="supply-dialog-title">Cadastrar insumo</h2></div><button class="dialog-close" id="close-supply" type="button" aria-label="Fechar">×</button></div>
+        <input id="supply-id" type="hidden">
+        <label for="supply-name">Nome do insumo</label><input id="supply-name" type="text" maxlength="60" placeholder="Ex.: Carne, palito, sacola" required autocomplete="off">
+        <div class="form-row">
+          <div class="field-group"><label for="supply-unit">Medida</label><select id="supply-unit" class="history-filter supply-unit-select"><option value="un">unidade</option><option value="kg">quilo (kg)</option><option value="g">grama (g)</option><option value="pacote">pacote</option><option value="litro">litro</option></select></div>
+          <div class="field-group"><label for="supply-minimum">Avisar quando faltar</label><input id="supply-minimum" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0" required></div>
+        </div>
+        <div class="dialog-actions"><button class="cancel-button" id="cancel-supply" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar insumo</button></div>
+      </form>
+    </dialog>
+
+    <dialog class="edit-dialog movement-dialog" id="supply-movement-dialog" aria-labelledby="supply-movement-title">
+      <form id="supply-movement-form">
+        <div class="section-heading"><div><p class="eyebrow">INSUMO</p><h2 id="supply-movement-title">Entrada de insumo</h2></div><button class="dialog-close" id="close-supply-movement" type="button" aria-label="Fechar">×</button></div>
+        <input id="supply-movement-id" type="hidden"><input id="supply-movement-type" type="hidden">
+        <p class="movement-product-info" id="supply-movement-info"></p>
+        <label for="supply-movement-quantity">Quantidade</label>
+        <div class="keypad-display" aria-hidden="true"><span id="supply-display">0</span><small id="supply-display-unit">un.</small></div>
+        <input id="supply-movement-quantity" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Ex.: 5" required>
+        <div class="keypad" id="supply-keypad" role="group" aria-label="Teclado numérico">
+          <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button>
+          <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button>
+          <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
+          <button type="button" data-key="comma" class="keypad-secondary">,</button><button type="button" data-key="0">0</button><button type="button" data-key="back" class="keypad-secondary" aria-label="Apagar último dígito">⌫</button>
+        </div>
+        <p class="movement-preview" id="supply-movement-preview"></p>
+        <label for="supply-movement-note">Observação <span>(opcional)</span></label><input id="supply-movement-note" type="text" maxlength="120" placeholder="Ex.: compra no mercado">
+        <div class="dialog-actions"><button class="cancel-button" id="cancel-supply-movement" type="button">Cancelar</button><button class="primary-button" id="supply-movement-submit" type="submit">Confirmar</button></div>
       </form>
     </dialog>
   </div>

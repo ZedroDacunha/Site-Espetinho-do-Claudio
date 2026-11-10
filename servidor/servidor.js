@@ -7,6 +7,9 @@ const ROOT_DIR = path.resolve(__dirname, "..");
 const DEFAULT_DATA_FILE = path.join(__dirname, "data", "estoque.json");
 const MAX_PRODUCTS = 10000;
 const MAX_MOVEMENTS = 50000;
+const MAX_SUPPLIES = 10000;
+const MAX_SUPPLY_MOVEMENTS = 50000;
+const SUPPLY_UNITS = ["kg", "g", "un", "pacote", "litro"];
 const MAX_STOCK_UNITS = 2147483647;
 const MAX_PRICE = 999999999999.99;
 const SESSION_COOKIE = "espetinhos_session";
@@ -20,6 +23,74 @@ function asId(value, fieldName) {
 
 function stateRevision(state) {
   return crypto.createHash("sha256").update(JSON.stringify(state)).digest("hex");
+}
+
+function normalizeSupplyAmount(value, fieldName) {
+  const amount = Math.round(Number(value) * 100) / 100;
+  if (!Number.isFinite(amount) || amount < 0 || amount > MAX_STOCK_UNITS) throw new Error(`${fieldName} inválida.`);
+  return amount;
+}
+
+function normalizeSupplies(input) {
+  const rawSupplies = input.supplies === undefined ? [] : input.supplies;
+  const rawMovements = input.supplyMovements === undefined ? [] : input.supplyMovements;
+  if (!Array.isArray(rawSupplies) || !Array.isArray(rawMovements)) {
+    throw new Error("Os insumos precisam conter listas de itens e movimentações.");
+  }
+  if (rawSupplies.length > MAX_SUPPLIES || rawMovements.length > MAX_SUPPLY_MOVEMENTS) {
+    throw new Error("Os insumos excedem o limite de registros permitido.");
+  }
+
+  const supplyIds = new Set();
+  const supplies = rawSupplies.map((item, index) => {
+    if (!item || typeof item.nome !== "string" || !item.nome.trim() || item.nome.trim().length > 60) {
+      throw new Error(`Nome inválido no insumo ${index + 1}.`);
+    }
+    const id = asId(item.id, `Identificador do insumo ${index + 1}`);
+    if (supplyIds.has(id)) throw new Error("Existem insumos com identificadores repetidos.");
+    supplyIds.add(id);
+    const unidade = String(item.unidade || "un").trim();
+    if (!SUPPLY_UNITS.includes(unidade)) throw new Error(`Unidade inválida no insumo ${item.nome}.`);
+    return {
+      id,
+      nome: item.nome.trim(),
+      unidade,
+      minimo: normalizeSupplyAmount(item.minimo, `Quantidade mínima do insumo ${item.nome}`)
+    };
+  });
+
+  const movementIds = new Set();
+  const supplyMovements = rawMovements.map((movement, index) => {
+    if (!movement || typeof movement.supplyName !== "string" || !movement.supplyName.trim() || movement.supplyName.trim().length > 60) {
+      throw new Error(`Insumo inválido na movimentação ${index + 1}.`);
+    }
+    const id = asId(movement.id, `Identificador da movimentação de insumo ${index + 1}`);
+    if (movementIds.has(id)) throw new Error("Existem movimentações de insumos com identificadores repetidos.");
+    movementIds.add(id);
+    const type = String(movement.type || "");
+    const quantity = Math.round(Number(movement.quantity) * 100) / 100;
+    const createdAt = String(movement.createdAt || "");
+    const unidade = String(movement.unidade || "un").trim();
+    if (!["entrada", "saida", "ajuste"].includes(type) || !Number.isFinite(quantity) || quantity <= 0
+      || quantity > MAX_STOCK_UNITS || !Number.isFinite(Date.parse(createdAt)) || !SUPPLY_UNITS.includes(unidade)) {
+      throw new Error(`Dados inválidos na movimentação de insumo ${index + 1}.`);
+    }
+    const note = typeof movement.note === "string" ? movement.note.trim() : "";
+    if (note.length > 120) throw new Error(`Observação muito longa na movimentação de insumo ${index + 1}.`);
+    return {
+      id,
+      supplyId: movement.supplyId == null ? "" : String(movement.supplyId),
+      supplyName: movement.supplyName.trim(),
+      type,
+      quantity,
+      unidade,
+      createdAt: new Date(createdAt).toISOString(),
+      note
+    };
+  });
+
+  supplyMovements.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  return { supplies, supplyMovements };
 }
 
 function normalizeState(input) {
@@ -78,14 +149,14 @@ function normalizeState(input) {
   });
 
   movements.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
-  return { products, movements };
+  return { products, movements, ...normalizeSupplies(input) };
 }
 
 async function readFileState(dataFile) {
   try {
     return normalizeState(JSON.parse(await fs.readFile(dataFile, "utf8")));
   } catch (error) {
-    if (error.code === "ENOENT") return { products: [], movements: [] };
+    if (error.code === "ENOENT") return { products: [], movements: [], supplies: [], supplyMovements: [] };
     throw error;
   }
 }
@@ -132,6 +203,29 @@ async function initializePostgres(pool) {
       revision TEXT NOT NULL
     )
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS supply_items (
+      id TEXT PRIMARY KEY,
+      name VARCHAR(60) NOT NULL,
+      unit VARCHAR(20) NOT NULL,
+      minimum NUMERIC(12, 2) NOT NULL CHECK (minimum >= 0),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS supply_movements (
+      id TEXT PRIMARY KEY,
+      supply_id TEXT NOT NULL DEFAULT '',
+      supply_name VARCHAR(60) NOT NULL,
+      type TEXT NOT NULL CHECK (type IN ('entrada', 'saida', 'ajuste')),
+      quantity NUMERIC(12, 2) NOT NULL CHECK (quantity > 0),
+      unit VARCHAR(20) NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL,
+      note VARCHAR(120) NOT NULL DEFAULT ''
+    )
+  `);
+  await pool.query("CREATE INDEX IF NOT EXISTS supply_movements_created_at_idx ON supply_movements (created_at DESC)");
+  await pool.query("CREATE INDEX IF NOT EXISTS supply_items_name_idx ON supply_items (name)");
 }
 
 async function readPostgresState(pool) {
@@ -153,6 +247,22 @@ async function readPostgresState(pool) {
       productName: row.product_name,
       type: row.type,
       quantity: Number(row.quantity),
+      createdAt: new Date(row.created_at).toISOString(),
+      note: row.note
+    })),
+    supplies: suppliesResult.rows.map(row => ({
+      id: row.id,
+      nome: row.name,
+      unidade: row.unit,
+      minimo: Number(row.minimum)
+    })),
+    supplyMovements: supplyMovementsResult.rows.map(row => ({
+      id: row.id,
+      supplyId: row.supply_id,
+      supplyName: row.supply_name,
+      type: row.type,
+      quantity: Number(row.quantity),
+      unidade: row.unit,
       createdAt: new Date(row.created_at).toISOString(),
       note: row.note
     }))
@@ -235,6 +345,22 @@ async function writePostgresState(pool, previousState, nextState, expectedRevisi
       valuesFor: row => [row.id, row.productId, row.productName, row.type, row.quantity, row.createdAt, row.note],
       updateColumns: ["product_id", "product_name", "type", "quantity", "created_at", "note"]
     });
+    await syncTable(client, {
+      table: "supply_items",
+      previous: previousState.supplies || [],
+      next: nextState.supplies,
+      columns: ["id", "name", "unit", "minimum", "updated_at"],
+      valuesFor: row => [row.id, row.nome, row.unidade, row.minimo, new Date().toISOString()],
+      updateColumns: ["name", "unit", "minimum", "updated_at"]
+    });
+    await syncTable(client, {
+      table: "supply_movements",
+      previous: previousState.supplyMovements || [],
+      next: nextState.supplyMovements,
+      columns: ["id", "supply_id", "supply_name", "type", "quantity", "unit", "created_at", "note"],
+      valuesFor: row => [row.id, row.supplyId, row.supplyName, row.type, row.quantity, row.unidade, row.createdAt, row.note],
+      updateColumns: ["supply_id", "supply_name", "type", "quantity", "unit", "created_at", "note"]
+    });
     const nextRevision = stateRevision(nextState);
     await client.query("UPDATE inventory_metadata SET revision = $1 WHERE id = 1", [nextRevision]);
     await client.query("COMMIT");
@@ -293,7 +419,7 @@ function createApp({
   if (appPassword && production && sessionSecret.length < 32) throw new Error("SESSION_SECRET deve ter ao menos 32 caracteres.");
 
   const secret = sessionSecret || crypto.randomBytes(32).toString("hex");
-  let state = { products: [], movements: [] };
+  let state = { products: [], movements: [], supplies: [], supplyMovements: [] };
   let revision = "";
   let saveQueue = Promise.resolve();
   let loginAttempts = new Map();
