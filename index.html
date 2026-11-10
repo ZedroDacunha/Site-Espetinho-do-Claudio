@@ -21,6 +21,10 @@
       <form id="login-form">
         <label for="access-password">Senha de acesso</label>
         <input id="access-password" type="password" autocomplete="current-password" required>
+        <label class="remember-device" for="remember-device">
+          <input id="remember-device" type="checkbox">
+          <span class="remember-device-text"><strong>Lembrar deste aparelho</strong><small>Não pede a senha de novo neste celular ou computador</small></span>
+        </label>
         <p class="login-error" id="login-error" role="alert"></p>
         <button class="primary-button" id="login-submit" type="submit">Entrar no estoque</button>
       </form>

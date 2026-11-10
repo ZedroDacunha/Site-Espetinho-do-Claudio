@@ -118,3 +118,36 @@ test("protect inventory API with the shared password session", async t => {
   const blockedAgain = await fetch(`${instance.baseUrl}/api/state`);
   assert.equal(blockedAgain.status, 401);
 });
+
+test("lembrar deste aparelho mantém a sessão por mais tempo", async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "claudio-remember-"));
+  const instance = await launch(path.join(directory, "state.json"), {
+    appPassword: "private-test-password",
+    sessionSecret: "test-session-secret-that-is-long-enough-1234567890"
+  });
+  t.after(async () => {
+    await close(instance.server);
+    await fs.rm(directory, { recursive: true, force: true });
+  });
+
+  const login = (remember) => fetch(`${instance.baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ password: "private-test-password", remember })
+  });
+
+  const normalCookie = (await login(false)).headers.get("set-cookie");
+  assert.match(normalCookie, /Max-Age=604800/);
+  assert.doesNotMatch(normalCookie, /Max-Age=15552000/);
+
+  const remembered = await login(true);
+  assert.equal(remembered.status, 200);
+  const cookie = remembered.headers.get("set-cookie");
+  assert.match(cookie, /Max-Age=15552000/);
+  assert.match(cookie, /HttpOnly/);
+  assert.deepEqual(await remembered.json(), { authenticated: true, remember: true });
+
+  const sameCookie = cookie.split(";")[0];
+  const state = await fetch(`${instance.baseUrl}/api/state`, { headers: { cookie: sameCookie } });
+  assert.equal(state.status, 200);
+});

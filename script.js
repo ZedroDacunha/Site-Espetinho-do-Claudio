@@ -1779,7 +1779,7 @@ loginForm.addEventListener("submit", async event => {
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: accessPassword.value })
+      body: JSON.stringify({ password: accessPassword.value, remember: document.querySelector("#remember-device").checked })
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(result.error || "Não foi possível entrar.");
