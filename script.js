@@ -1057,11 +1057,9 @@ editForm.addEventListener("submit", async event => {
 const movementDialog = document.querySelector("#movement-dialog");
 const movementForm = document.querySelector("#movement-form");
 const movementQuantityInput = document.querySelector("#movement-quantity");
-const simpleModeToggle = document.querySelector("#simple-mode");
-
+// O Modo simples é escolhido na tela de Configurações (não ocupa mais o menu).
 function applySimpleMode(enabled) {
   document.body.classList.toggle("simple-mode", enabled);
-  if (simpleModeToggle) simpleModeToggle.checked = enabled;
   const simpleOn = document.querySelector("#setting-simple-on");
   const simpleOff = document.querySelector("#setting-simple-off");
   if (simpleOn) simpleOn.checked = enabled;
@@ -1069,12 +1067,9 @@ function applySimpleMode(enabled) {
   try { localStorage.setItem(SIMPLE_MODE_KEY, enabled ? "1" : "0"); } catch (_) { /* A preferência é opcional. */ }
 }
 
-if (simpleModeToggle) {
-  let initialSimpleMode = false;
-  try { initialSimpleMode = localStorage.getItem(SIMPLE_MODE_KEY) === "1"; } catch (_) { /* Usa o padrão normal. */ }
-  applySimpleMode(initialSimpleMode);
-  simpleModeToggle.addEventListener("change", () => applySimpleMode(simpleModeToggle.checked));
-}
+let initialSimpleMode = false;
+try { initialSimpleMode = localStorage.getItem(SIMPLE_MODE_KEY) === "1"; } catch (_) { /* Usa o padrão normal. */ }
+applySimpleMode(initialSimpleMode);
 
 const movementAmountPreview = document.querySelector("#movement-amount-preview");
 
