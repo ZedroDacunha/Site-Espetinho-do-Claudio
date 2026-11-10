@@ -435,3 +435,20 @@ footer strong { color: var(--text); font-weight: 600; }
 @media (max-width: 360px) {
   .main-content .stats { grid-template-columns: 1fr; }
 }
+
+/* Relatório de saídas */
+.report-panel { margin-top: 16px; padding: 22px; }
+.report-list { display: grid; gap: 9px; }
+.report-row { display: grid; gap: 6px; padding: 10px 0; border-top: 1px solid var(--line); }
+.report-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.report-row-head strong { font-size: 12px; overflow-wrap: anywhere; }
+.report-row-head span { flex: 0 0 auto; color: var(--red); font-size: 11px; font-weight: 700; }
+.report-bar { height: 7px; border-radius: 20px; background: var(--surface-soft); overflow: hidden; }
+.report-bar-fill { height: 100%; border-radius: inherit; background: var(--red); opacity: .75; transition: width .25s ease-out; }
+.report-meta { color: var(--muted); font-size: 10px; }
+@media (max-width: 650px) {
+  .report-panel { padding: 17px; }
+  .report-panel .movement-heading { align-items: stretch; }
+  .report-panel .history-filter-label { width: 100%; }
+  .report-panel .history-filter { width: 100%; }
+}
