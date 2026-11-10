@@ -452,3 +452,50 @@ footer strong { color: var(--text); font-weight: 600; }
   .report-panel .history-filter-label { width: 100%; }
   .report-panel .history-filter { width: 100%; }
 }
+
+/* Ajustes de simplicidade e legibilidade */
+.stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.main-content .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.stat-label { font-size: 12px; }
+.stat-value { font-size: 30px; }
+.stat-note { font-size: 11px; }
+.product-name { font-size: 15px; }
+.product-price { font-size: 12px; }
+.stock-badge { font-size: 11px; padding: 6px 10px; }
+.movement-trigger { min-height: 40px; padding: 0 13px; font-size: 12px; }
+.edit-button, .delete-button { font-size: 12px; padding: 9px 6px; }
+.sidebar .nav-link { font-size: 13px; }
+.history-note, .restock-note, .report-meta { font-size: 11px; }
+.quick-actions { justify-content: center; }
+.quick-actions .primary-link { width: 100%; justify-content: center; min-height: 46px; font-size: 14px; }
+.status-message { font-size: 13px; }
+.low-stock-row strong { font-size: 14px; }
+.low-stock-row > span { font-size: 12px; }
+
+/* Painel recolhível de relatórios e histórico */
+.history-details { margin-top: 16px; padding: 0; overflow: hidden; }
+.history-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 20px; cursor: pointer; list-style: none; font: 700 14px 'Manrope', sans-serif; }
+.history-details > summary::-webkit-details-marker { display: none; }
+.history-details > summary::after { content: "▾"; color: var(--muted); font-size: 13px; transition: transform .2s; }
+.history-details[open] > summary::after { transform: rotate(180deg); }
+.history-details > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+.summary-hint { margin-left: auto; color: var(--muted); font: 500 11px 'DM Sans', sans-serif; }
+.history-details[open] .summary-hint { display: none; }
+.history-details-body { padding: 0 20px 20px; }
+.history-details-body .report-panel, .history-details-body .movement-panel { margin-top: 0; padding: 0; border: 0; background: transparent; }
+.history-details-body .movement-panel { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
+
+/* Diálogo de entrada/saída mais claro */
+.quick-amounts { display: flex; gap: 7px; margin: -8px 0 12px; }
+.quick-amounts button { flex: 1; min-height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--text); font: 700 13px 'DM Sans', sans-serif; cursor: pointer; }
+.quick-amounts button:hover { border-color: var(--accent); color: var(--accent); }
+.movement-preview { margin: 0 0 18px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.movement-preview.invalid { color: var(--red); }
+.movement-dialog label { font-size: 12px; }
+.movement-dialog input[type="number"], .movement-dialog input[type="text"] { height: 46px; font-size: 15px; }
+@media (max-width: 650px) {
+  .main-content .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat-value { font-size: 26px; }
+  .history-details > summary { padding: 15px 16px; }
+  .history-details-body { padding: 0 16px 16px; }
+}
