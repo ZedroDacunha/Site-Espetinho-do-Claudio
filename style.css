@@ -635,3 +635,34 @@ form input, .edit-dialog input, .movement-dialog input, .supply-unit-select { he
 
 /* Modo simples: aumenta tudo mantendo a mesma hierarquia */
 .simple-mode { --text-sm: 13px; --text-base: 15px; --text-md: 16px; --text-lg: 18px; --title-section: 21px; --title-page: 36px; }
+
+/* ---------- Colunas alinhadas nas listas ---------- */
+/* Cabeçalho de colunas, igual ao alinhamento das linhas */
+.list-header { display: grid; grid-template-columns: minmax(130px, 1fr) auto auto auto; align-items: center; gap: 17px; padding: 0 14px 8px; }
+.list-header .column-label { text-align: right; }
+.list-header .column-label:last-child { text-align: left; }
+.main-content .list-header { grid-template-columns: minmax(130px, 1fr) auto auto auto; }
+
+/* Rótulos de coluna: únicos por linha em telas pequenas */
+.column-label { display: none; color: var(--muted); font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .7px; }
+.list-header .column-label { display: block; }
+
+/* Blocos de status e quantidade alinhados à direita, com números tabulares */
+.stock-status, .stock-controls, .supply-amount-box { display: grid; gap: 4px; justify-items: end; }
+.quantity-value, .supply-amount { font-variant-numeric: tabular-nums; text-align: right; }
+.stock-badge { font-variant-numeric: tabular-nums; }
+
+/* Insumos usam a mesma estrutura de colunas dos produtos */
+.supply-row, .supply-row .list-header { grid-template-columns: minmax(130px, 1fr) auto auto auto; }
+
+@media (max-width: 1100px) {
+  .list-header { display: none; }
+  .product-row .column-label, .supply-row .column-label { display: block; }
+  .stock-status, .stock-controls, .supply-amount-box { justify-items: start; }
+  .quantity-value, .supply-amount { text-align: left; }
+}
+
+@media (max-width: 650px) {
+  .stock-status, .supply-amount-box { justify-items: end; }
+  .stock-controls { grid-column: 1 / -1; justify-items: start; }
+}
