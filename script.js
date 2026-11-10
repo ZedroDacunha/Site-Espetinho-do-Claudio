@@ -30,6 +30,7 @@ let statusTimer;
 let serverAvailable = false;
 let isSaving = false;
 let serverRevision = "";
+let pendingCount = 0;
 
 function loadProducts() {
   try {
@@ -95,6 +96,8 @@ async function persistState() {
   if (!serverAvailable || isSaving) return false;
   const snapshot = { products: [...products], movements: [...movements] };
   isSaving = true;
+  pendingCount += 1;
+  if (pendingCount === 1) window.addEventListener("beforeunload", warnUnsaved);
   document.body.classList.add("saving-data");
   try {
     const saved = await putState(snapshot);
@@ -120,8 +123,16 @@ async function persistState() {
     return false;
   } finally {
     isSaving = false;
+    pendingCount = Math.max(0, pendingCount - 1);
+    if (pendingCount === 0) window.removeEventListener("beforeunload", warnUnsaved);
     document.body.classList.remove("saving-data");
   }
+}
+
+function warnUnsaved(event) {
+  event.preventDefault();
+  event.returnValue = "As alterações ainda estão sendo salvas no servidor.";
+  return event.returnValue;
 }
 
 function saveProducts() {
@@ -341,6 +352,7 @@ function renderProducts() {
   }
   updateSummary();
   renderMovements();
+  renderReport();
 }
 
 function periodStart(period) {
@@ -427,6 +439,75 @@ function renderMovements() {
 document.querySelector("#movement-filter").addEventListener("change", renderMovements);
 document.querySelector("#movement-product-filter").addEventListener("change", renderMovements);
 document.querySelector("#movement-period-filter").addEventListener("change", renderMovements);
+
+function reportRows(period) {
+  const from = periodStart(period);
+  const totals = new Map();
+  movements.forEach(movement => {
+    if (movement.type !== "saida") return;
+    if (Date.parse(movement.createdAt) < from) return;
+    const key = movement.productName;
+    totals.set(key, (totals.get(key) || 0) + Number(movement.quantity));
+  });
+  return [...totals.entries()]
+    .map(([name, quantity]) => ({ name, quantity }))
+    .sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name, "pt-BR"));
+}
+
+function renderReport() {
+  const list = document.querySelector("#report-list");
+  const empty = document.querySelector("#report-empty");
+  if (!list || !empty) return;
+  const period = document.querySelector("#report-period").value;
+  const rows = reportRows(period);
+  const total = rows.reduce((acc, row) => acc + row.quantity, 0);
+  const biggest = rows[0]?.quantity || 0;
+  list.replaceChildren(...rows.map(row => {
+    const element = document.createElement("div");
+    element.className = "report-row";
+    const head = document.createElement("div");
+    head.className = "report-row-head";
+    const name = document.createElement("strong");
+    name.textContent = row.name;
+    const value = document.createElement("span");
+    value.textContent = `${row.quantity} un.`;
+    head.append(name, value);
+    const bar = document.createElement("div");
+    bar.className = "report-bar";
+    const fill = document.createElement("div");
+    fill.className = "report-bar-fill";
+    fill.style.width = `${biggest ? Math.max(6, Math.round((row.quantity / biggest) * 100)) : 0}%`;
+    bar.append(fill);
+    const meta = document.createElement("span");
+    meta.className = "report-meta";
+    const share = total ? Math.round((row.quantity / total) * 100) : 0;
+    meta.textContent = `${share}% das saídas do período`;
+    element.append(head, bar, meta);
+    return element;
+  }));
+  empty.hidden = rows.length > 0;
+  const note = document.querySelector("#report-note");
+  if (note) note.textContent = rows.length
+    ? `${rows.length} produto(s) · ${total} unidade(s) de saída no período.`
+    : "Ajuda a decidir o que comprar mais.";
+}
+
+document.querySelector("#report-period").addEventListener("change", renderReport);
+
+document.querySelector("#copy-report").addEventListener("click", async () => {
+  const period = document.querySelector("#report-period").value;
+  const rows = reportRows(period);
+  if (!rows.length) return showStatus("Sem saídas registradas no período escolhido.", true);
+  const labels = { "7": "últimos 7 dias", "30": "últimos 30 dias", mes: "mês atual", todos: "todo o histórico" };
+  const text = [`Saídas — ${labels[period] || labels["30"]}`, ...rows.map(row => `${row.quantity} un. - ${row.name}`)].join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    showStatus("Relatório copiado. Cole onde quiser.");
+  } catch (error) {
+    console.error("Não foi possível copiar o relatório.", error);
+    showStatus("Não foi possível copiar automaticamente.", true);
+  }
+});
 
 async function removeProduct(id) {
   if (!canMutate()) return;
