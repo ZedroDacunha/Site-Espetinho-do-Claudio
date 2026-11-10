@@ -732,3 +732,103 @@ form input, .edit-dialog input, .movement-dialog input, .supply-unit-select { he
   .movement-type-box { justify-items: start; }
   .movement-quantity-box { grid-column: 1 / -1; grid-template-columns: auto auto; align-items: center; justify-content: space-between; justify-items: start; padding-top: 6px; border-top: 1px solid var(--line); }
 }
+
+/* ============================================================
+   Refinamento visual
+   - Profundidade suave em vez de bordas duras
+   - Estados de foco e hover consistentes
+   - Movimento discreto, respeitando "reduzir movimento"
+   ============================================================ */
+:root {
+  --radius-sm: 8px;
+  --radius-md: 11px;
+  --radius-lg: 14px;
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  --shadow-sm: 0 1px 2px rgba(45, 38, 24, .05), 0 1px 3px rgba(45, 38, 24, .04);
+  --shadow-md: 0 6px 20px rgba(45, 38, 24, .07), 0 2px 6px rgba(45, 38, 24, .04);
+  --shadow-lg: 0 18px 48px rgba(28, 24, 16, .16);
+  --ease: cubic-bezier(.22, .61, .36, 1);
+}
+:root[data-theme="dark"] {
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, .38);
+  --shadow-lg: 0 20px 52px rgba(0, 0, 0, .5);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+/* Fundo com leve profundidade, sem competir com o conteúdo */
+body { background-image: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--accent) 5%, transparent) 0%, transparent 62%); background-repeat: no-repeat; }
+
+/* Cartões e painéis: mesma linguagem de sombra e raio */
+.panel, .stat-card { border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); transition: box-shadow .25s var(--ease), transform .25s var(--ease), border-color .25s var(--ease); }
+.panel:hover, .stat-card:hover { box-shadow: var(--shadow-md); }
+.stat-card { position: relative; overflow: hidden; }
+.stat-card::after { content: ""; position: absolute; inset: auto 0 0 0; height: 3px; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 20%, transparent)); opacity: 0; transition: opacity .25s var(--ease); }
+.stat-card:hover::after { opacity: 1; }
+
+/* Linhas de lista: elevação discreta no hover */
+.product-row { border-radius: var(--radius-md); transition: border-color .18s var(--ease), box-shadow .18s var(--ease), transform .18s var(--ease); }
+.product-row:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); box-shadow: var(--shadow-sm); }
+.movement-row:hover, .low-stock-row:hover, .report-row:hover { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+
+/* Foco visível e igual em todo o site (teclado e toque) */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm);
+}
+
+/* Botões: resposta tátil consistente */
+.primary-button, .secondary-button, .cancel-button, .movement-trigger, .quick-amounts button, .keypad button, .theme-toggle, .logout-button, .utility-button, .text-link, .primary-link {
+  transition: background .18s var(--ease), color .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease), transform .12s var(--ease);
+}
+.primary-button:active, .secondary-button:active, .cancel-button:active, .movement-trigger:active, .keypad button:active, .primary-link:active { transform: translateY(1px) scale(.995); }
+.primary-button:not(:disabled):hover, .primary-link:hover { box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 28%, transparent); }
+.primary-button:disabled, .secondary-button:disabled, .movement-trigger:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; transform: none; }
+.primary-button:focus-visible { box-shadow: var(--ring); }
+
+/* Etiquetas de status com leve profundidade */
+.stock-badge, .movement-amount, .count-pill { box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 12%, transparent); }
+
+/* Menu lateral: item ativo com marcador e realce */
+.side-nav { display: grid; gap: 3px; }
+.nav-link { position: relative; border-radius: var(--radius-sm); transition: background .18s var(--ease), color .18s var(--ease); }
+.nav-link:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.nav-link[aria-current="page"] { background: var(--accent-soft); color: var(--accent-dark); }
+.nav-link[aria-current="page"]::before { content: ""; position: absolute; left: -10px; top: 50%; width: 3px; height: 18px; border-radius: 3px; background: var(--accent); transform: translateY(-50%); }
+
+/* Entrada das telas e das listas: fade curto e suave */
+.view:not([hidden]) { animation: viewIn .28s var(--ease) both; }
+@keyframes viewIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.product-row, .movement-row, .low-stock-row { animation: rowIn .22s var(--ease) both; }
+@keyframes rowIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* Diálogos: entrada suave e fundo mais definido */
+dialog.edit-dialog { box-shadow: var(--shadow-lg); border-radius: var(--radius-lg); }
+dialog[open] { animation: dialogIn .22s var(--ease) both; }
+@keyframes dialogIn { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+dialog::backdrop { backdrop-filter: blur(3px); animation: fadeIn .2s var(--ease) both; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Mensagem de status: entra deslizando, sem "pular" */
+.status-message:not(:empty) { box-shadow: var(--shadow-md); animation: statusIn .22s var(--ease) both; }
+@keyframes statusIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Campos: foco com anel suave em todos, inclusive selects do histórico */
+input, select { transition: border-color .18s var(--ease), box-shadow .18s var(--ease), background .18s var(--ease); }
+input:hover:not(:focus), select:hover:not(:focus) { border-color: color-mix(in srgb, var(--text) 18%, var(--line)); }
+select:focus-visible, .history-filter:focus-visible, .supply-unit-select:focus-visible { border-color: var(--accent); box-shadow: var(--ring); }
+
+/* Rolagem e barras discretas */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
+
+/* Barra de rolagem discreta em navegadores WebKit */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--text) 22%, transparent) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text) 20%, transparent); border: 3px solid transparent; border-radius: 20px; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--text) 34%, transparent); background-clip: content-box; }
+
+/* Toque: remove o realce azul padrão do celular nas listas */
+.product-row, .movement-trigger, .nav-link, .keypad button, .quick-amounts button { -webkit-tap-highlight-color: transparent; }
