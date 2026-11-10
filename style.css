@@ -902,9 +902,245 @@ form > label:first-of-type { margin-top: 0; }
 .confirm-dialog .section-heading { margin-bottom: var(--space-md); }
 .confirm-message { margin: 0 0 var(--space-lg); color: var(--muted); font-size: var(--text-md); line-height: 1.6; }
 .confirm-message strong { color: var(--text); }
+.confirm-message .confirm-extra { margin: var(--space-sm) 0 0; color: var(--muted); font-size: var(--text-base); line-height: 1.6; }
 .confirm-dialog .dialog-actions { gap: var(--space-sm); }
 .confirm-dialog .dialog-actions .primary-button { min-width: 0; flex: 1; }
 .confirm-dialog .dialog-actions .cancel-button { flex: 1; }
 .primary-button.danger { background: var(--red); }
 .primary-button.danger:hover { background: color-mix(in srgb, var(--red) 85%, #000); }
 .primary-button.danger:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 25%, transparent); }
+
+/* ============================================================
+   Configurações
+   ============================================================ */
+.settings-panel { display: grid; gap: var(--space-lg); }
+.settings-panel + .settings-panel { margin-top: var(--space-lg); }
+.setting-block { display: grid; gap: var(--space-sm); }
+.setting-label { font-size: var(--text-base); font-weight: 700; color: var(--text); }
+.choice-group { display: grid; gap: var(--space-sm); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.choice { display: flex; align-items: center; gap: var(--space-md); padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-soft); cursor: pointer; transition: border-color .18s var(--ease), background .18s var(--ease), box-shadow .18s var(--ease); }
+.choice:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.choice input { width: 20px; height: 20px; flex: 0 0 20px; accent-color: var(--accent); cursor: pointer; }
+.choice-text { display: grid; gap: 2px; min-width: 0; }
+.choice-text strong { font-size: var(--text-md); font-weight: 700; }
+.choice-text small { font-size: var(--text-sm); color: var(--muted); }
+.choice:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.choice:has(input:focus-visible) { box-shadow: var(--ring); }
+.setting-help { margin: 0; font-size: var(--text-sm); color: var(--muted); line-height: 1.6; }
+.setting-help strong { color: var(--text); }
+.setting-backup-meta { margin: 0; }
+.settings-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: center; }
+.secondary-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-size: var(--text-base); font-weight: 600; text-decoration: none; transition: border-color .18s var(--ease), color .18s var(--ease); }
+.secondary-link:hover { border-color: var(--accent); color: var(--accent-dark); }
+.danger-outline { border-color: color-mix(in srgb, var(--red) 45%, var(--line)); color: var(--red); }
+.danger-outline:hover { border-color: var(--red); background: var(--red-soft); }
+.settings-version { margin: var(--space-lg) 0 0; text-align: center; font-size: var(--text-sm); color: var(--muted); }
+.simple-mode .choice { padding: 16px 18px; }
+.simple-mode .choice-text strong { font-size: var(--text-lg); }
+.simple-mode .choice-text small { font-size: var(--text-base); }
+.simple-mode .setting-label { font-size: var(--text-md); }
+@media (max-width: 560px) {
+  .choice-group { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   Modo simples: letras maiores COM espaço, sem amontoar
+   A regra é dar ar entre título e apoio, entre linhas e entre os
+   blocos de cada cartão — o texto cresce, mas nunca fica grudado.
+   ============================================================ */
+.simple-mode {
+  --text-xs: 13px;
+  --text-sm: 15px;
+  --text-base: 16px;
+  --text-md: 17px;
+  --text-lg: 19px;
+  --title-card: 18px;
+  --title-section: 22px;
+  --title-page: 34px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 18px;
+  --space-lg: 26px;
+  --space-xl: 34px;
+}
+.simple-mode body,
+.simple-mode { font-size: var(--text-base); }
+.simple-mode .main-content { padding-top: 30px; }
+
+/* Cabeçalhos de página e de painel com respiro */
+.simple-mode .page-heading { gap: 14px; margin-bottom: var(--space-xl); }
+.simple-mode .page-heading h1 { margin-bottom: 8px; line-height: 1.2; }
+.simple-mode .page-heading .intro-copy { font-size: var(--text-base); line-height: 1.6; max-width: 46ch; }
+.simple-mode .today { font-size: var(--text-sm); line-height: 1.5; }
+.simple-mode .panel { padding: 24px 22px; }
+.simple-mode .section-heading,
+.simple-mode .inventory-heading,
+.simple-mode .movement-heading,
+.simple-mode .dashboard-panel-heading { gap: var(--space-md); margin-bottom: var(--space-md); }
+.simple-mode .section-copy { font-size: var(--text-sm); line-height: 1.6; }
+
+/* No modo simples cada linha é um cartão: o cabeçalho de colunas não se aplica */
+.simple-mode .list-header,
+.simple-mode .movement-columns { display: none; }
+.simple-mode .product-row .column-label,
+.simple-mode .supply-row .column-label,
+.simple-mode .movement-row .column-label { display: block; }
+
+/* Cartões de resumo: valor grande, rótulo e nota separados */
+.simple-mode .stats,
+.simple-mode .main-content .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-md); margin-bottom: var(--space-lg); }
+.simple-mode .stat-card { padding: 20px 20px 18px; min-height: 140px; display: grid; align-content: start; gap: 6px; }
+.simple-mode .stat-label { font-size: var(--text-base); }
+.simple-mode .stat-value { font-size: 40px; line-height: 1.05; margin: 8px 0 2px; }
+.simple-mode .stat-note { font-size: var(--text-sm); line-height: 1.5; margin-top: 4px; }
+
+/* Listas: cada linha vira um cartão com blocos empilhados */
+.simple-mode .product-list { gap: var(--space-md); }
+.simple-mode .product-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm) var(--space-md);
+  padding: 18px 18px 16px;
+  align-items: start;
+}
+.simple-mode .product-details { align-items: flex-start; gap: var(--space-md); }
+.simple-mode .product-name { font-size: var(--text-lg); line-height: 1.35; margin-bottom: 6px; }
+.simple-mode .product-price { font-size: var(--text-sm); line-height: 1.5; display: block; }
+.simple-mode .product-thumb { width: 60px; height: 60px; flex-basis: 60px; }
+.simple-mode .stock-status { gap: 6px; justify-items: end; }
+.simple-mode .column-label { font-size: var(--text-xs); letter-spacing: .6px; }
+.simple-mode .stock-badge { font-size: var(--text-base); padding: 9px 14px; line-height: 1.3; }
+.simple-mode .stock-controls { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--space-sm); justify-items: start; margin-top: 4px; }
+.simple-mode .quantity-value { font-size: var(--text-lg); font-weight: 700; text-align: left; }
+.simple-mode .product-actions {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--line);
+}
+.simple-mode .movement-buttons { gap: var(--space-sm); }
+.simple-mode .movement-trigger { min-height: 52px; padding: 0 20px; font-size: var(--text-md); }
+.simple-mode .record-actions { gap: var(--space-sm); margin-left: auto; }
+.simple-mode .edit-button,
+.simple-mode .delete-button { min-height: 52px; padding: 0 14px; font-size: var(--text-md); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); }
+.simple-mode .delete-button { color: var(--red); border-color: color-mix(in srgb, var(--red) 30%, var(--line)); }
+
+/* Cada bloco de produto com posição própria (nada se sobrepõe) */
+.simple-mode .product-row .product-details { grid-column: 1; grid-row: 1; }
+.simple-mode .product-row .stock-status { grid-column: 2; grid-row: 1; }
+.simple-mode .product-row .stock-controls { grid-column: 1 / -1; grid-row: 2; }
+.simple-mode .product-row .product-actions { grid-column: 1 / -1; grid-row: 3; }
+
+/* Insumos seguem o mesmo cartão */
+.simple-mode .main-content .supply-row { grid-template-columns: minmax(0, 1fr) auto; }
+.simple-mode .supply-row .product-details { grid-column: 1; grid-row: 1; }
+.simple-mode .supply-row .stock-status { grid-column: 2; grid-row: 1; justify-items: end; }
+.simple-mode .supply-row .supply-amount-box { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: baseline; gap: var(--space-sm); justify-items: start; }
+.simple-mode .supply-row .product-actions { grid-column: 1 / -1; grid-row: 3; }
+.simple-mode .supply-amount { font-size: var(--text-lg); min-width: 0; }
+
+/* Início: "Comprar" e avisos de insumos com uma linha por informação */
+.simple-mode .low-stock-row { flex-direction: column; align-items: flex-start; gap: 6px; padding: var(--space-md) 0; }
+.simple-mode .low-stock-row strong { font-size: var(--text-md); }
+.simple-mode .low-stock-row > span { font-size: var(--text-sm); text-align: left; line-height: 1.5; }
+.simple-mode .low-stock-empty { gap: var(--space-md); padding: var(--space-md) 0 0; }
+.simple-mode .low-stock-empty p { font-size: var(--text-sm); line-height: 1.6; }
+.simple-mode .quick-actions { flex-direction: column; align-items: stretch; gap: var(--space-sm); padding: 18px; }
+.simple-mode .quick-actions .primary-link { min-height: 56px; font-size: var(--text-lg); justify-content: center; }
+.simple-mode .text-link { font-size: var(--text-base); min-height: 44px; align-items: center; }
+
+/* Histórico: produto, tipo e quantidade em faixas separadas */
+.simple-mode .movement-row { grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-sm) var(--space-md); padding: var(--space-md) 0; }
+.simple-mode .movement-details strong { font-size: var(--text-md); line-height: 1.4; }
+.simple-mode .movement-details > span { font-size: var(--text-sm); line-height: 1.5; }
+.simple-mode .movement-details { grid-column: 1; grid-row: 1; }
+.simple-mode .movement-type-box { grid-column: 2; grid-row: 1; justify-items: end; gap: 6px; }
+.simple-mode .movement-amount { font-size: var(--text-sm); padding: 7px 12px; }
+.simple-mode .movement-quantity-box { grid-column: 1 / -1; grid-row: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); padding-top: var(--space-sm); border-top: 1px solid var(--line); }
+.simple-mode .movement-quantity { font-size: var(--text-md); text-align: left; }
+.simple-mode .movement-filters { gap: var(--space-sm); }
+.simple-mode .history-filter { min-height: 46px; font-size: var(--text-base); }
+.simple-mode .history-filter-label { font-size: var(--text-sm); }
+
+/* Relatório e histórico recolhido */
+.simple-mode .history-details summary { font-size: var(--text-md); padding: 4px 0; }
+.simple-mode .report-row-head strong { font-size: var(--text-md); }
+.simple-mode .report-meta { font-size: var(--text-sm); line-height: 1.5; }
+
+/* Formulários: rótulo, campo e ajuda cada um na sua linha */
+.simple-mode .add-panel,
+.simple-mode .import-panel { padding: 24px 22px; }
+.simple-mode .add-panel form,
+.simple-mode .add-panel .privacy-note { max-width: 100%; }
+.simple-mode form > label,
+.simple-mode .edit-dialog form > label,
+.simple-mode .movement-dialog form > label { margin-top: var(--space-lg); font-size: var(--text-md); line-height: 1.5; }
+.simple-mode form > label:first-of-type { margin-top: 0; }
+.simple-mode label > span { font-size: var(--text-sm); }
+.simple-mode input[type="text"],
+.simple-mode input[type="number"],
+.simple-mode input[type="password"],
+.simple-mode input[type="search"],
+.simple-mode select { min-height: 54px; font-size: var(--text-lg); }
+.simple-mode .form-row { display: grid; gap: var(--space-lg); }
+.simple-mode .field-group { gap: 8px; }
+.simple-mode .form-note { font-size: var(--text-sm); line-height: 1.6; margin-top: var(--space-md); }
+.simple-mode .edit-dialog { width: min(560px, calc(100vw - 24px)); padding: 24px; }
+.simple-mode .edit-dialog .section-heading { margin-bottom: var(--space-md); }
+.simple-mode .dialog-actions { gap: var(--space-sm); margin-top: var(--space-lg); }
+.simple-mode .dialog-actions .primary-button,
+.simple-mode .dialog-actions .cancel-button { min-height: 54px; font-size: var(--text-md); }
+.simple-mode .confirm-message { font-size: var(--text-md); line-height: 1.7; }
+.simple-mode .keypad { gap: 10px; margin-top: var(--space-md); }
+.simple-mode .keypad button { min-height: 62px; font-size: 26px; }
+.simple-mode .keypad-display { font-size: 40px; padding: 14px 0; }
+.simple-mode .movement-preview { font-size: var(--text-base); line-height: 1.6; }
+
+/* Backup, importações e configurações */
+.simple-mode .backup-cards { gap: var(--space-md); padding: var(--space-lg) 0; }
+.simple-mode .backup-card { min-height: auto; padding: 20px; gap: var(--space-sm); }
+.simple-mode .backup-card p { font-size: var(--text-base); line-height: 1.65; max-width: 100%; }
+.simple-mode .backup-warning { padding: 14px 16px; gap: var(--space-sm); }
+.simple-mode .backup-warning p { font-size: var(--text-base); line-height: 1.7; }
+.simple-mode .import-intro { gap: var(--space-md); padding-bottom: var(--space-lg); align-items: flex-start; }
+.simple-mode .import-intro p { font-size: var(--text-base); line-height: 1.7; max-width: 100%; }
+
+/* Menu lateral: itens mais altos e sem aperto */
+.simple-mode .sidebar .nav-link { min-height: 52px; font-size: var(--text-md); gap: var(--space-md); margin-bottom: 4px; }
+.simple-mode .mode-switch { padding: 14px 12px; gap: var(--space-sm); }
+.simple-mode .mode-switch-text strong { font-size: var(--text-md); }
+.simple-mode .mode-switch-text small { font-size: var(--text-sm); line-height: 1.4; }
+
+/* Status flutuante maior e mais legível */
+.simple-mode .status-message:not(:empty) { padding: 16px 18px; font-size: var(--text-md); line-height: 1.6; }
+
+/* Celular: tudo em uma coluna, com folga */
+@media (max-width: 1050px) {
+  .simple-mode .stats,
+  .simple-mode .main-content .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 650px) {
+  .simple-mode .main-content { padding: 24px 16px 0; }
+  .simple-mode .stats,
+  .simple-mode .main-content .stats { grid-template-columns: 1fr; }
+  .simple-mode .stat-card { min-height: auto; }
+  .simple-mode .product-row { grid-template-columns: minmax(0, 1fr); }
+  .simple-mode .product-row .product-details { grid-column: 1; grid-row: 1; }
+  .simple-mode .product-row .stock-status { grid-column: 1; grid-row: 2; }
+  .simple-mode .product-row .stock-controls { grid-row: 3; }
+  .simple-mode .product-row .product-actions { grid-row: 4; }
+  .simple-mode .stock-status { justify-items: start; }
+  .simple-mode .product-actions { flex-direction: column; align-items: stretch; }
+  .simple-mode .movement-buttons { display: grid; grid-template-columns: 1fr 1fr; }
+  .simple-mode .record-actions { margin-left: 0; justify-content: space-between; }
+  .simple-mode .main-content .supply-row { grid-template-columns: minmax(0, 1fr); }
+  .simple-mode .supply-row .stock-status { grid-column: 1; grid-row: 2; justify-items: start; }
+  .simple-mode .supply-row .supply-amount-box { grid-row: 3; }
+  .simple-mode .supply-row .product-actions { grid-row: 4; }
+  .simple-mode .movement-row { grid-template-columns: minmax(0, 1fr); }
+  .simple-mode .movement-type-box { grid-column: 1; grid-row: 2; justify-items: start; }
+  .simple-mode .form-row { grid-template-columns: 1fr; }
+  .simple-mode .choice-group { grid-template-columns: 1fr; }
+}

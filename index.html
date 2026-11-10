@@ -50,6 +50,7 @@
           <a class="nav-link" href="#insumos" data-view-link><span class="nav-icon" aria-hidden="true">🧺</span><span>Insumos</span><span class="nav-badge" id="nav-supply-count">0</span></a>
           <a class="nav-link" href="#importacoes" data-view-link><span class="nav-icon" aria-hidden="true">↕</span><span>Importações</span></a>
           <a class="nav-link" href="#cadastro" data-view-link><span class="nav-icon" aria-hidden="true">＋</span><span>Cadastro</span></a>
+          <a class="nav-link" href="#configuracoes" data-view-link><span class="nav-icon" aria-hidden="true">⚙</span><span>Configurações</span></a>
         </nav>
         <label class="mode-switch" for="simple-mode"><input id="simple-mode" type="checkbox"><span class="mode-switch-text"><strong>Modo simples</strong><small>Letras e botões maiores</small></span></label>
         <div class="sidebar-note"><span class="note-icon" aria-hidden="true">✓</span><p>Estoque salvo no servidor desta aplicação.</p></div>
@@ -167,6 +168,43 @@
             </form>
             <p class="form-note"><span aria-hidden="true">✓</span> Os dados são salvos automaticamente no servidor.</p>
           </section>
+        </section>
+
+        <section class="view" id="configuracoes" aria-labelledby="settings-title" hidden>
+          <div class="page-heading"><div class="page-titles"><h1 id="settings-title">Configurações</h1><p class="intro-copy">Deixe o sistema do seu jeito.</p></div></div>
+
+          <section class="panel settings-panel" aria-labelledby="settings-visual-title">
+            <div class="section-heading"><div><h2 id="settings-visual-title">Aparência</h2><p class="section-copy">Escolha como a tela deve aparecer.</p></div><span class="heading-mark" aria-hidden="true">◐</span></div>
+            <div class="setting-block">
+              <span class="setting-label" id="setting-theme-label">Cor da tela</span>
+              <div class="choice-group" role="radiogroup" aria-labelledby="setting-theme-label">
+                <label class="choice"><input type="radio" name="setting-theme" id="setting-theme-light" value="light"><span class="choice-text"><strong>Modo claro</strong><small>Fundo branco</small></span></label>
+                <label class="choice"><input type="radio" name="setting-theme" id="setting-theme-dark" value="dark"><span class="choice-text"><strong>Modo escuro</strong><small>Fundo escuro</small></span></label>
+              </div>
+            </div>
+            <div class="setting-block">
+              <span class="setting-label" id="setting-simple-label">Tamanho do texto e dos botões</span>
+              <div class="choice-group" role="radiogroup" aria-labelledby="setting-simple-label">
+                <label class="choice"><input type="radio" name="setting-simple" id="setting-simple-off" value="off"><span class="choice-text"><strong>Normal</strong><small>Tamanho padrão</small></span></label>
+                <label class="choice"><input type="radio" name="setting-simple" id="setting-simple-on" value="on"><span class="choice-text"><strong>Modo simples</strong><small>Letras e botões maiores</small></span></label>
+              </div>
+              <p class="setting-help">O Modo simples também pode ser ligado pelo menu lateral.</p>
+            </div>
+          </section>
+
+          <section class="panel settings-panel" aria-labelledby="settings-data-title">
+            <div class="section-heading"><div><h2 id="settings-data-title">Backup</h2><p class="section-copy">Uma cópia dos dados de vez em quando evita sustos.</p></div><span class="heading-mark" aria-hidden="true">🗂️</span></div>
+            <p class="backup-meta setting-backup-meta" id="backup-meta-settings"></p>
+            <div class="settings-actions"><a class="secondary-link" href="#importacoes" data-view-link>Ir para Backup <span aria-hidden="true">→</span></a><button class="secondary-button" id="settings-export" type="button">Baixar backup</button></div>
+          </section>
+
+          <section class="panel settings-panel" aria-labelledby="settings-access-title">
+            <div class="section-heading"><div><h2 id="settings-access-title">Acesso</h2><p class="section-copy">A senha é a mesma para todos que usam o estoque.</p></div><span class="heading-mark" aria-hidden="true">🔒</span></div>
+            <p class="setting-help">Para trocar a senha, altere a variável <strong>APP_PASSWORD</strong> no painel do Render. A troca vale para todos os aparelhos.</p>
+            <div class="settings-actions"><button class="secondary-button danger-outline" id="settings-logout" type="button" hidden>Sair do estoque</button></div>
+          </section>
+
+          <p class="settings-version">Espetinhos do Claudio · controle de estoque</p>
         </section>
 
         <p class="status-message" id="status-message" role="status" aria-live="polite"></p>
