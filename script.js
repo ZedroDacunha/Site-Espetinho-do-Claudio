@@ -509,6 +509,17 @@ calculatorToggle.addEventListener("click", () => {
   calculatorDialog.showModal();
 });
 document.querySelector("#close-calculator").addEventListener("click", () => calculatorDialog.close());
+const photoViewer = document.querySelector("#photo-viewer");
+document.querySelector("#close-photo-viewer").addEventListener("click", () => photoViewer.close());
+// Tocar na imagem (ou fora dela) fecha, como nas fotos do celular
+photoViewer.addEventListener("click", event => {
+  if (event.target === photoViewer || event.target.id === "photo-viewer-image") photoViewer.close();
+});
+photoViewer.addEventListener("close", () => {
+  const image = document.querySelector("#photo-viewer-image");
+  image.removeAttribute("src");
+  image.onerror = null;
+});
 calculatorKeys.addEventListener("click", event => {
   const button = event.target.closest("button[data-calc]");
   if (!button) return;
@@ -638,6 +649,41 @@ document.querySelector("#copy-restock-list").addEventListener("click", async () 
   }
 });
 
+/* Miniatura da foto: tocar (ou clicar) abre a imagem grande. */
+function createThumb(url, title) {
+  const thumb = document.createElement("img");
+  thumb.className = "product-thumb";
+  thumb.src = url;
+  thumb.alt = "";
+  thumb.loading = "lazy";
+  thumb.decoding = "async";
+  thumb.tabIndex = 0;
+  thumb.setAttribute("role", "button");
+  thumb.setAttribute("aria-label", `Ver a foto de ${title}`);
+  const open = event => {
+    if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openPhotoViewer(url, title);
+  };
+  thumb.addEventListener("click", open);
+  thumb.addEventListener("keydown", open);
+  return thumb;
+}
+
+function openPhotoViewer(url, title) {
+  const dialog = document.querySelector("#photo-viewer");
+  const image = document.querySelector("#photo-viewer-image");
+  const error = document.querySelector("#photo-viewer-error");
+  if (!dialog || !image) return;
+  document.querySelector("#photo-viewer-title").textContent = title;
+  image.alt = `Foto de ${title}`;
+  error.hidden = true;
+  image.hidden = false;
+  image.onerror = () => { image.hidden = true; error.hidden = false; };
+  image.src = url;
+  dialog.showModal();
+}
+
 function createProductRow(product) {
   const row = document.createElement("article");
   row.className = "product-row";
@@ -646,12 +692,7 @@ function createProductRow(product) {
   details.className = "product-details";
   const url = photoUrl(product.foto);
   if (url) {
-    const thumb = document.createElement("img");
-    thumb.className = "product-thumb";
-    thumb.src = url;
-    thumb.alt = "";
-    thumb.loading = "lazy";
-    thumb.decoding = "async";
+    const thumb = createThumb(url, product.nome);
     const text = document.createElement("div");
     const name = document.createElement("p");
     name.className = "product-name";
@@ -1215,12 +1256,7 @@ function createSupplyRow(item) {
   meta.textContent = `Avisar quando chegar em ${formatSupplyAmount(minimum, item.unidade)}`;
   const url = photoUrl(item.foto);
   if (url) {
-    const thumb = document.createElement("img");
-    thumb.className = "product-thumb";
-    thumb.src = url;
-    thumb.alt = "";
-    thumb.loading = "lazy";
-    thumb.decoding = "async";
+    const thumb = createThumb(url, item.nome);
     const text = document.createElement("div");
     text.append(name, meta);
     details.append(thumb, text);
