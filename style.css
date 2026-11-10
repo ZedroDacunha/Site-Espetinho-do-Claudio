@@ -666,3 +666,45 @@ form input, .edit-dialog input, .movement-dialog input, .supply-unit-select { he
   .stock-status, .supply-amount-box { justify-items: end; }
   .stock-controls { grid-column: 1 / -1; justify-items: start; }
 }
+
+/* ---------- Valores em dinheiro e números alinhados ---------- */
+/* Números grandes dos cartões: dígitos com a mesma largura e sem quebra */
+.stat-value, .movement-amount, .report-row-head span, .supply-amount, .quantity-value, .low-stock-row > span { font-variant-numeric: tabular-nums; }
+.stat-value { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.report-row-head span, .movement-amount { text-align: right; }
+
+/* Painel de movimento/histórico segue o mesmo ritmo dos demais painéis */
+.dashboard-panel, .report-panel, .movement-panel, .inventory-panel, .add-panel, .import-panel { margin-top: 0; }
+.dashboard-panel + .dashboard-panel, .inventory-panel + .history-details, .stats + .dashboard-panel { margin-top: var(--space-md); }
+.quick-actions { margin-top: var(--space-md); }
+.stats { margin-bottom: var(--space-lg); }
+.view > .panel + .panel, .view > .panel + .history-details, .view > .history-details + .panel { margin-top: var(--space-md); }
+
+/* Última linha de cada lista sem borda duplicada com o rodapé */
+.product-row:last-child, .low-stock-row:last-child, .movement-row:last-child { border-bottom: 0; }
+
+/* ---------- Títulos de linha e textos secundários padronizados ---------- */
+/* Toda linha de lista usa o mesmo par: título 14px + texto de apoio 11px */
+.low-stock-row strong,
+.report-row-head strong,
+.movement-details strong,
+.low-stock-empty strong,
+.backup-card h3,
+.empty-state h3 { font-size: var(--text-md); font-weight: 700; line-height: 1.4; }
+
+.low-stock-row > span,
+.report-meta,
+.movement-details > span,
+.low-stock-empty p,
+.supply-row .product-price { font-size: var(--text-sm); line-height: 1.5; }
+
+/* Nome do produto/insumo é o único com destaque maior */
+.product-name { font-size: var(--title-card); }
+
+/* Quantidades e valores das linhas com o mesmo peso visual */
+.quantity-value, .supply-amount, .movement-amount, .report-row-head span { font-weight: 700; font-size: var(--text-md); }
+.movement-amount { font-size: var(--text-sm); }
+
+/* Tabela de histórico também alinhada à direita na coluna de quantidade */
+.movement-row { align-items: center; }
+.movement-amount { min-width: 72px; text-align: right; }
