@@ -1144,3 +1144,49 @@ form > label:first-of-type { margin-top: 0; }
   .simple-mode .form-row { grid-template-columns: 1fr; }
   .simple-mode .choice-group { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   Calculadora
+   Botão no topo abre uma calculadora simples, com contas do dia a dia.
+   ============================================================ */
+/* Calculadora, tema e sair ficam juntos, alinhados à direita */
+.topbar { justify-content: flex-start; column-gap: 10px; }
+.calc-toggle { margin-left: auto; }
+.topbar .logout-button { margin-left: 0; }
+.calculator-dialog { width: min(380px, calc(100vw - 24px)); max-width: 380px; padding: 22px; }
+.calculator-screen {
+  display: grid; gap: 4px; padding: 14px 16px; margin-bottom: var(--space-md);
+  border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-soft); text-align: right;
+}
+.calculator-history { margin: 0; min-height: 18px; color: var(--muted); font-size: var(--text-base); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.calculator-display {
+  display: block; color: var(--text); font: 800 38px 'Manrope', sans-serif; line-height: 1.15;
+  font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.calculator-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.calculator-keys button {
+  min-height: 56px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface);
+  color: var(--text); font: 700 22px 'Manrope', sans-serif; cursor: pointer;
+  transition: background .15s var(--ease), border-color .15s var(--ease), color .15s var(--ease), transform .1s var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.calculator-keys button:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); color: var(--accent-dark); background: var(--accent-soft); }
+.calculator-keys button:active { transform: scale(.97); }
+.calculator-keys .calc-soft { color: var(--muted); font: 600 16px 'DM Sans', sans-serif; background: var(--surface-soft); }
+.calculator-keys .calc-op { color: var(--accent-dark); background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); }
+.calculator-keys .calc-wide { grid-column: span 2; }
+.calculator-keys .calc-equals { background: var(--accent); border-color: var(--accent); color: #fff; }
+.calculator-keys .calc-equals:hover { background: var(--accent-dark); border-color: var(--accent-dark); color: #fff; }
+.calculator-note { margin: var(--space-md) 0 0; text-align: center; color: var(--muted); font-size: var(--text-sm); }
+.simple-mode .calculator-dialog { width: min(440px, calc(100vw - 20px)); padding: 22px 20px; }
+.simple-mode .calculator-display { font-size: 46px; }
+.simple-mode .calculator-history { font-size: var(--text-md); }
+.simple-mode .calculator-keys { gap: 10px; }
+.simple-mode .calculator-keys button { min-height: 66px; font-size: 26px; }
+.simple-mode .calculator-keys .calc-soft { font-size: var(--text-md); }
+.simple-mode .calculator-note { font-size: var(--text-base); }
+@media (max-width: 650px) {
+  .topbar .calc-toggle { margin-left: auto; padding: 8px; }
+  .topbar .theme-toggle { margin-left: 0; }
+  .calculator-keys button { min-height: 58px; }
+}
