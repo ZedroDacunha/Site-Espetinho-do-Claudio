@@ -425,26 +425,47 @@ function createApp({
   let loginAttempts = new Map();
   let pool = null;
   if (databaseUrl) {
-    const { Pool } = require("pg");
+    let Pool;
+    try {
+      ({ Pool } = require("pg"));
+    } catch (error) {
+      const failure = new Error("O pacote \"pg\" não está instalado. Rode \"npm ci --prefix servidor\" (o build do Render faz isso automaticamente).");
+      failure.code = "PG_MODULE_MISSING";
+      throw failure;
+    }
     pool = new Pool({ connectionString: databaseUrl, max: 5, idleTimeoutMillis: 30000, connectionTimeoutMillis: 10000 });
     pool.on("error", error => console.error("Erro inesperado na conexão PostgreSQL:", error));
   }
 
+  const DB_STARTUP_TIMEOUT_MS = 45000;
+
   const ready = (async () => {
     if (pool) {
-      await initializePostgres(pool);
-      state = await readPostgresState(pool);
-      await pool.query("INSERT INTO inventory_metadata (id, revision) VALUES (1, $1) ON CONFLICT (id) DO NOTHING", [stateRevision(state)]);
-      const snapshot = await readPostgresSnapshot(pool);
-      state = snapshot.state;
-      revision = snapshot.revision;
-      if (state.products.length === 0 && state.movements.length === 0) {
-        const fileState = await readFileState(dataFile);
-        if (fileState.products.length || fileState.movements.length) {
-          revision = await writePostgresState(pool, state, fileState, revision);
-          state = fileState;
+      const timeout = new Promise((_, reject) => {
+        const timer = setTimeout(() => {
+          const failure = new Error("O banco de dados demorou mais de 45 segundos para responder na inicialização.");
+          failure.code = "DB_STARTUP_TIMEOUT";
+          reject(failure);
+        }, DB_STARTUP_TIMEOUT_MS);
+        timer.unref?.();
+      });
+      const bootstrap = async () => {
+        await initializePostgres(pool);
+        state = await readPostgresState(pool);
+        await pool.query("INSERT INTO inventory_metadata (id, revision) VALUES (1, $1) ON CONFLICT (id) DO NOTHING", [stateRevision(state)]);
+        const snapshot = await readPostgresSnapshot(pool);
+        state = snapshot.state;
+        revision = snapshot.revision;
+        if (state.products.length === 0 && state.movements.length === 0
+          && state.supplies.length === 0 && state.supplyMovements.length === 0) {
+          const fileState = await readFileState(dataFile);
+          if (fileState.products.length || fileState.movements.length || fileState.supplies.length) {
+            revision = await writePostgresState(pool, state, fileState, revision);
+            state = fileState;
+          }
         }
-      }
+      };
+      await Promise.race([bootstrap(), timeout]);
     } else {
       state = await readFileState(dataFile);
       revision = stateRevision(state);
@@ -589,6 +610,10 @@ if (require.main === module) {
   process.once("SIGTERM", shutdown);
   process.once("SIGINT", shutdown);
   startServer().then(started => { server = started; }).catch(error => {
+    if (error.code === "DB_STARTUP_TIMEOUT") console.error("O banco de dados não respondeu a tempo. Verifique DATABASE_URL e se o Neon está ativo.");
+    if (error.code === "PG_MODULE_MISSING") console.error("Dependências incompletas no servidor: rode npm ci --prefix servidor.");
+    if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND" || error.code === "ETIMEDOUT") console.error("Não foi possível conectar ao banco. Confira DATABASE_URL, a senha e se o projeto do Neon está ligado.");
+    if (/password authentication failed|SASL|28P01/.test(String(error.message))) console.error("A senha da DATABASE_URL parece incorreta.");
     console.error("Não foi possível iniciar o servidor ou carregar os dados:", error);
     process.exitCode = 1;
   });
