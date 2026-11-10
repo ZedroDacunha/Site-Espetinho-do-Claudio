@@ -16,7 +16,6 @@
   <section class="login-screen" id="login-screen" aria-labelledby="login-title" hidden>
     <div class="login-card">
       <span class="brand-mark login-mark" aria-hidden="true">🔥</span>
-      <p class="eyebrow">ESPETINHOS DO CLAUDIO</p>
       <h1 id="login-title">Acesso ao estoque</h1>
       <p class="login-description">Digite a senha compartilhada para abrir o painel.</p>
       <form id="login-form">
@@ -62,7 +61,7 @@
         <div class="connection-warning" id="connection-warning" role="alert" hidden></div>
         <section class="view" id="inicio" aria-labelledby="home-title">
           <div class="page-heading">
-            <div><h1 id="home-title">Meu estoque</h1><p class="intro-copy">O que precisa de atenção hoje.</p></div>
+            <div class="page-titles"><h1 id="home-title">Meu estoque</h1><p class="intro-copy">O que precisa de atenção hoje.</p></div>
             <div class="today" id="today"></div>
           </div>
           <section class="stats" aria-label="Resumo do estoque">
@@ -85,7 +84,7 @@
         </section>
 
         <section class="view" id="estoque" aria-labelledby="inventory-title" hidden>
-          <div class="page-heading"><div><h1 id="inventory-title">Estoque</h1><p class="intro-copy">Toque em Entrada ou Saída para atualizar a quantidade.</p></div></div>
+          <div class="page-heading"><div class="page-titles"><h1 id="inventory-title">Estoque</h1><p class="intro-copy">Toque em Entrada ou Saída para atualizar a quantidade.</p></div></div>
           <section class="panel inventory-panel">
             <div class="inventory-heading">
               <div class="section-heading"><h2>Lista de produtos <span class="count-pill" id="count-pill">0</span></h2></div>
@@ -98,13 +97,13 @@
             <summary><span>Relatórios e histórico</span><span class="summary-hint">toque para abrir</span></summary>
             <div class="history-details-body">
           <section class="panel report-panel" aria-labelledby="report-title">
-            <div class="movement-heading"><div><p class="eyebrow">RELATÓRIO</p><h2 id="report-title">Mais saíram no período</h2></div><label class="history-filter-label" for="report-period">Período<select class="history-filter" id="report-period"><option value="30">Últimos 30 dias</option><option value="7">Últimos 7 dias</option><option value="mes">Mês atual</option><option value="todos">Todo o histórico</option></select></label></div>
+            <div class="movement-heading"><div><h2 id="report-title">Mais saíram no período</h2></div><label class="history-filter-label" for="report-period">Período<select class="history-filter" id="report-period"><option value="30">Últimos 30 dias</option><option value="7">Últimos 7 dias</option><option value="mes">Mês atual</option><option value="todos">Todo o histórico</option></select></label></div>
             <div class="report-list" id="report-list" aria-live="polite"></div>
             <div class="movement-empty" id="report-empty"><span aria-hidden="true">↕</span><div><strong>Sem saídas no período</strong><p>Registre saídas para ver quais produtos saem mais.</p></div></div>
             <div class="restock-actions"><button class="secondary-button" id="copy-report" type="button">Copiar relatório</button><span class="restock-note" id="report-note">Ajuda a decidir o que comprar mais.</span></div>
           </section>
           <section class="panel movement-panel" aria-labelledby="movement-history-title">
-            <div class="movement-heading"><div><p class="eyebrow">ACOMPANHAMENTO</p><h2 id="movement-history-title">Histórico de movimentações <span class="count-pill" id="movement-count">0</span></h2></div><div class="movement-filters"><label class="history-filter-label" for="movement-filter">Tipo<select class="history-filter" id="movement-filter"><option value="todas">Todos</option><option value="entrada">Entradas</option><option value="saida">Saídas</option><option value="ajuste">Ajustes</option></select></label><label class="history-filter-label" for="movement-product-filter">Produto<select class="history-filter" id="movement-product-filter"><option value="todos">Todos</option></select></label><label class="history-filter-label" for="movement-period-filter">Data<select class="history-filter" id="movement-period-filter"><option value="todos">Todo o período</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="mes">Mês atual</option></select></label></div></div>
+            <div class="movement-heading"><div><h2 id="movement-history-title">Histórico de movimentações <span class="count-pill" id="movement-count">0</span></h2></div><div class="movement-filters"><label class="history-filter-label" for="movement-filter">Tipo<select class="history-filter" id="movement-filter"><option value="todas">Todos</option><option value="entrada">Entradas</option><option value="saida">Saídas</option><option value="ajuste">Ajustes</option></select></label><label class="history-filter-label" for="movement-product-filter">Produto<select class="history-filter" id="movement-product-filter"><option value="todos">Todos</option></select></label><label class="history-filter-label" for="movement-period-filter">Data<select class="history-filter" id="movement-period-filter"><option value="todos">Todo o período</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="mes">Mês atual</option></select></label></div></div>
             <div class="movement-list" id="movement-list" aria-live="polite"></div>
             <div class="movement-empty" id="movement-empty"><span aria-hidden="true">↕</span><div><strong>Nenhuma movimentação ainda</strong><p>Quando você registrar uma entrada ou saída, ela aparecerá aqui.</p></div></div>
             <p class="history-note" id="movement-summary">O histórico começa a ser registrado a partir de agora.</p>
@@ -114,22 +113,22 @@
         </section>
 
         <section class="view" id="insumos" aria-labelledby="supplies-title" hidden>
-          <div class="page-heading"><div><h1 id="supplies-title">Insumos</h1><p class="intro-copy">Material usado no dia a dia: carne, palito, embalagem, sacola.</p></div></div>
+          <div class="page-heading"><div class="page-titles"><h1 id="supplies-title">Insumos</h1><p class="intro-copy">Material usado no dia a dia: carne, palito, embalagem, sacola.</p></div></div>
           <section class="panel inventory-panel">
             <div class="inventory-heading">
               <div class="section-heading"><h2>Lista de insumos <span class="count-pill" id="supply-count-pill">0</span></h2></div>
               <label class="search-box" for="busca-insumos"><span aria-hidden="true">⌕</span><input id="busca-insumos" type="search" placeholder="Buscar insumo" autocomplete="off"></label>
             </div>
             <div class="inventory-list" id="lista-insumos" aria-live="polite"></div>
-            <div class="empty-state" id="supply-empty-state"><span class="empty-illustration" aria-hidden="true">🧺</span><h3>Nenhum insumo cadastrado</h3><p>Cadastre o que você compra para fazer os espetinhos.</p><button class="primary-button" id="new-supply" type="button">Cadastrar insumo</button></div>
+            <div class="empty-state" id="supply-empty-state"><span class="empty-illustration" aria-hidden="true">🧺</span><h3>Nenhum insumo cadastrado</h3><p>Cadastre o que você compra para fazer os espetinhos.</p><button class="primary-button" id="new-supply" type="button">＋ Cadastrar insumo</button></div>
             <div class="supply-footer"><button class="secondary-button" id="new-supply-footer" type="button">＋ Cadastrar insumo</button></div>
           </section>
         </section>
 
         <section class="view" id="importacoes" aria-labelledby="imports-title" hidden>
-          <div class="page-heading"><div><h1 id="imports-title">Backup</h1><p class="intro-copy">Baixe uma cópia dos dados de vez em quando.</p></div></div>
+          <div class="page-heading"><div class="page-titles"><h1 id="imports-title">Backup</h1><p class="intro-copy">Baixe uma cópia dos dados de vez em quando.</p></div></div>
           <section class="panel import-panel">
-            <div class="import-intro"><span class="import-illustration" aria-hidden="true">🗂️</span><div><h2>Gerenciar backups</h2><p>O backup guarda os dados dos seus produtos em um arquivo que você pode salvar e levar para outro dispositivo.</p></div></div>
+            <div class="import-intro"><span class="import-illustration" aria-hidden="true">🗂️</span><div><h2>Gerenciar backups</h2><p class="section-copy">O backup guarda os dados dos seus produtos em um arquivo que você pode salvar e levar para outro dispositivo.</p></div></div>
             <div class="backup-cards">
               <article class="backup-card"><span class="backup-card-icon export-icon" aria-hidden="true">↓</span><h3>Exportar estoque</h3><p>Baixe uma cópia atualizada dos produtos e do histórico de movimentações.</p><button class="primary-button" id="export-backup" type="button">Baixar backup</button><p class="backup-meta" id="backup-meta"></p></article>
               <article class="backup-card"><span class="backup-card-icon import-icon" aria-hidden="true">↑</span><h3>Importar backup</h3><p>Restaure seus produtos a partir de um arquivo de backup JSON salvo anteriormente.</p><button class="secondary-button" id="import-backup" type="button">Escolher arquivo</button><input id="backup-file" type="file" accept=".json,application/json" hidden></article>
@@ -139,19 +138,19 @@
         </section>
 
         <section class="view" id="cadastro" aria-labelledby="register-title" hidden>
-          <div class="page-heading"><div><h1 id="register-title">Novo produto</h1><p class="intro-copy">Preencha os dados e toque em Cadastrar.</p></div></div>
+          <div class="page-heading"><div class="page-titles"><h1 id="register-title">Novo produto</h1><p class="intro-copy">Preencha os dados e toque em Cadastrar.</p></div></div>
           <section class="panel add-panel">
-            <div class="section-heading"><div><h2>Dados do produto</h2></div><span class="heading-mark" aria-hidden="true">＋</span></div>
+            <div class="section-heading"><div><h2>Dados do produto</h2><p class="section-copy">O nome, o preço de custo e a quantidade atual.</p></div><span class="heading-mark" aria-hidden="true">＋</span></div>
             <form id="form-produto">
               <label for="nome">Nome do produto</label><input id="nome" name="nome" type="text" maxlength="60" placeholder="Ex.: Espetinho de frango" required autocomplete="off">
               <div class="form-row">
                 <div class="field-group"><label for="preco">Preço de custo <span>(R$)</span></label><div class="input-wrap"><span class="input-prefix">R$</span><input id="preco" name="preco" type="number" min="0" step="0.01" placeholder="0,00" required></div></div>
                 <div class="field-group"><label for="quantidade">Quantidade</label><input id="quantidade" name="quantidade" type="number" min="0" step="1" placeholder="0" required></div>
               </div>
-              <label for="minimo">Avisar quando chegar a</label><input id="minimo" name="minimo" type="number" min="0" step="1" placeholder="Estoque mínimo (unidades)" required>
-              <button class="primary-button" type="submit"><span aria-hidden="true">＋</span> Cadastrar produto</button>
+              <label for="minimo">Avisar quando chegar a</label><input id="minimo" name="minimo" type="number" min="0" step="1" placeholder="Ex.: 10" required>
+              <button class="primary-button" type="submit"><span aria-hidden="true">＋</span> Cadastrar</button>
             </form>
-            <p class="privacy-note"><span aria-hidden="true">✓</span> Os dados são gravados automaticamente no servidor.</p>
+            <p class="form-note"><span aria-hidden="true">✓</span> Os dados são salvos automaticamente no servidor.</p>
           </section>
         </section>
 
@@ -162,7 +161,7 @@
 
     <dialog class="edit-dialog" id="edit-dialog" aria-labelledby="edit-title">
       <form id="edit-form">
-        <div class="section-heading"><div><p class="eyebrow">ATUALIZAR CADASTRO</p><h2 id="edit-title">Editar produto</h2></div><button class="dialog-close" id="close-edit" type="button" aria-label="Fechar">×</button></div>
+        <div class="section-heading"><div><h2 id="edit-title">Editar produto</h2></div><button class="dialog-close" id="close-edit" type="button" aria-label="Fechar">×</button></div>
         <input id="edit-id" type="hidden">
         <label for="edit-nome">Nome do produto</label><input id="edit-nome" type="text" maxlength="60" required autocomplete="off">
         <div class="form-row"><div class="field-group"><label for="edit-preco">Preço de custo <span>(R$)</span></label><div class="input-wrap"><span class="input-prefix">R$</span><input id="edit-preco" type="number" min="0" step="0.01" required></div></div><div class="field-group"><label for="edit-quantidade">Quantidade</label><input id="edit-quantidade" type="number" min="0" step="1" required></div></div>
@@ -172,7 +171,7 @@
     </dialog>
     <dialog class="edit-dialog movement-dialog" id="movement-dialog" aria-labelledby="movement-dialog-title">
       <form id="movement-form">
-        <div class="section-heading"><div><p class="eyebrow">MOVIMENTAÇÃO DE ESTOQUE</p><h2 id="movement-dialog-title">Registrar entrada</h2></div><button class="dialog-close" id="close-movement" type="button" aria-label="Fechar">×</button></div>
+        <div class="section-heading"><div><h2 id="movement-dialog-title">Registrar entrada</h2></div><button class="dialog-close" id="close-movement" type="button" aria-label="Fechar">×</button></div>
         <input id="movement-product-id" type="hidden"><input id="movement-type" type="hidden">
         <p class="movement-product-info" id="movement-product-info"></p>
         <label for="movement-quantity">Quantidade de unidades</label>
@@ -191,7 +190,7 @@
     </dialog>
     <dialog class="edit-dialog" id="supply-dialog" aria-labelledby="supply-dialog-title">
       <form id="supply-form">
-        <div class="section-heading"><div><p class="eyebrow">INSUMO</p><h2 id="supply-dialog-title">Cadastrar insumo</h2></div><button class="dialog-close" id="close-supply" type="button" aria-label="Fechar">×</button></div>
+        <div class="section-heading"><div><h2 id="supply-dialog-title">Cadastrar insumo</h2></div><button class="dialog-close" id="close-supply" type="button" aria-label="Fechar">×</button></div>
         <input id="supply-id" type="hidden">
         <label for="supply-name">Nome do insumo</label><input id="supply-name" type="text" maxlength="60" placeholder="Ex.: Carne, palito, sacola" required autocomplete="off">
         <div class="form-row">
@@ -204,7 +203,7 @@
 
     <dialog class="edit-dialog movement-dialog" id="supply-movement-dialog" aria-labelledby="supply-movement-title">
       <form id="supply-movement-form">
-        <div class="section-heading"><div><p class="eyebrow">INSUMO</p><h2 id="supply-movement-title">Entrada de insumo</h2></div><button class="dialog-close" id="close-supply-movement" type="button" aria-label="Fechar">×</button></div>
+        <div class="section-heading"><div><h2 id="supply-movement-title">Entrada de insumo</h2></div><button class="dialog-close" id="close-supply-movement" type="button" aria-label="Fechar">×</button></div>
         <input id="supply-movement-id" type="hidden"><input id="supply-movement-type" type="hidden">
         <p class="movement-product-info" id="supply-movement-info"></p>
         <label for="supply-movement-quantity">Quantidade</label>
