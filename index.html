@@ -34,6 +34,9 @@
         <span class="brand-mark" aria-hidden="true">🔥</span>
         <span class="brand-name">Espetinhos <span>do Claudio</span></span>
       </a>
+      <button class="theme-toggle calc-toggle" id="calculator-toggle" type="button" aria-label="Abrir calculadora">
+        <span class="theme-icon" aria-hidden="true">🧮</span><span class="theme-label">Calculadora</span>
+      </button>
       <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Ativar modo escuro">
         <span class="theme-icon" aria-hidden="true">☾</span><span class="theme-label">Modo escuro</span>
       </button>
@@ -280,6 +283,36 @@
         </div>
         <div class="dialog-actions"><button class="cancel-button" id="cancel-supply" type="button">Cancelar</button><button class="primary-button" type="submit">Salvar insumo</button></div>
       </form>
+    </dialog>
+
+    <dialog class="edit-dialog calculator-dialog" id="calculator-dialog" aria-labelledby="calculator-title">
+      <div class="section-heading"><div><h2 id="calculator-title">Calculadora</h2></div><button class="dialog-close" id="close-calculator" type="button" aria-label="Fechar">×</button></div>
+      <div class="calculator-screen">
+        <p class="calculator-history" id="calculator-history">Pronta para calcular</p>
+        <output class="calculator-display" id="calculator-display" aria-live="polite">0</output>
+      </div>
+      <div class="calculator-keys" id="calculator-keys" role="group" aria-label="Teclado da calculadora">
+        <button type="button" data-calc="clear" class="calc-soft">C</button>
+        <button type="button" data-calc="back" class="calc-soft" aria-label="Apagar o último dígito">⌫</button>
+        <button type="button" data-calc="percent" class="calc-soft" aria-label="Porcentagem">%</button>
+        <button type="button" data-calc="operator" data-operator="÷" class="calc-op" aria-label="Dividir">÷</button>
+        <button type="button" data-calc="digit" data-digit="7">7</button>
+        <button type="button" data-calc="digit" data-digit="8">8</button>
+        <button type="button" data-calc="digit" data-digit="9">9</button>
+        <button type="button" data-calc="operator" data-operator="×" class="calc-op" aria-label="Multiplicar">×</button>
+        <button type="button" data-calc="digit" data-digit="4">4</button>
+        <button type="button" data-calc="digit" data-digit="5">5</button>
+        <button type="button" data-calc="digit" data-digit="6">6</button>
+        <button type="button" data-calc="operator" data-operator="−" class="calc-op" aria-label="Subtrair">−</button>
+        <button type="button" data-calc="digit" data-digit="1">1</button>
+        <button type="button" data-calc="digit" data-digit="2">2</button>
+        <button type="button" data-calc="digit" data-digit="3">3</button>
+        <button type="button" data-calc="operator" data-operator="+" class="calc-op" aria-label="Somar">+</button>
+        <button type="button" data-calc="digit" data-digit="0" class="calc-wide">0</button>
+        <button type="button" data-calc="comma" aria-label="Vírgula">,</button>
+        <button type="button" data-calc="equals" class="calc-equals" aria-label="Resultado">=</button>
+      </div>
+      <p class="calculator-note">Também funciona pelo teclado do computador.</p>
     </dialog>
 
     <dialog class="edit-dialog movement-dialog" id="supply-movement-dialog" aria-labelledby="supply-movement-title">

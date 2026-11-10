@@ -339,6 +339,195 @@ function canMutate() {
   return false;
 }
 
+/* ---------- Calculadora ---------- */
+/* Contas simples do dia a dia: + − × ÷ e porcentagem.
+   O visor mostra o que está sendo digitado; a linha de cima mostra a conta. */
+const calculator = {
+  value: 0,          // valor atual (resultado parcial)
+  entry: "",         // texto que está sendo digitado
+  operator: "",      // + − × ÷
+  stored: 0,         // valor guardado antes do operador
+  waiting: false,    // o próximo número começa do zero
+  error: false,
+  history: "Pronta para calcular"
+};
+
+function calcFormat(value) {
+  if (!Number.isFinite(value)) return "Erro";
+  const rounded = Math.round(value * 1e8) / 1e8;
+  if (Math.abs(rounded) >= 1e12) return rounded.toExponential(6).replace(".", ",");
+  return rounded.toLocaleString("pt-BR", { maximumFractionDigits: 8 });
+}
+
+function calcTypedNumber() {
+  if (calculator.entry === "" || calculator.entry === "-") return 0;
+  return Number(calculator.entry.replace(/\./g, "").replace(",", ".")) || 0;
+}
+
+function calcCurrent() {
+  return calculator.entry !== "" ? calcTypedNumber() : calculator.value;
+}
+
+function calcApply(left, operator, right) {
+  if (operator === "+") return left + right;
+  if (operator === "−") return left - right;
+  if (operator === "×") return left * right;
+  if (operator === "÷") return right === 0 ? NaN : left / right;
+  return right;
+}
+
+function calcRender() {
+  const screen = document.querySelector("#calculator-display");
+  const history = document.querySelector("#calculator-history");
+  if (!screen || !history) return;
+  if (calculator.error) {
+    screen.textContent = "Erro";
+    history.textContent = "Não é possível dividir por zero.";
+    return;
+  }
+  screen.textContent = calculator.entry !== "" ? calculator.entry : calcFormat(calculator.value);
+  history.textContent = calculator.history;
+}
+
+function calcDigit(digit) {
+  if (calculator.error) calcClear();
+  if (calculator.waiting) {
+    calculator.entry = "";
+    calculator.waiting = false;
+  }
+  const plainLength = calculator.entry.replace(/[,.-]/g, "").length;
+  if (plainLength >= 12) return;
+  if (calculator.entry === "0") calculator.entry = digit === "," ? "0," : digit;
+  else if (digit === ",") {
+    if (!calculator.entry.includes(",")) calculator.entry = calculator.entry === "" ? "0," : `${calculator.entry},`;
+  } else {
+    calculator.entry += digit;
+  }
+  calculator.value = calcTypedNumber();
+}
+
+function calcOperator(next) {
+  if (calculator.error) calcClear();
+  const current = calcCurrent();
+  if (calculator.operator && calculator.entry !== "") {
+    const result = calcApply(calculator.stored, calculator.operator, current);
+    if (!Number.isFinite(result)) { calculator.error = true; calcRender(); return; }
+    calculator.stored = result;
+    calculator.value = result;
+  } else {
+    calculator.stored = current;
+    calculator.value = current;
+  }
+  calculator.operator = next;
+  calculator.entry = "";
+  calculator.waiting = true;
+  calculator.history = `${calcFormat(calculator.stored)} ${next}`;
+}
+
+function calcEquals() {
+  if (calculator.error) return;
+  if (!calculator.operator) {
+    calculator.entry = "";
+    calculator.history = "Pronta para calcular";
+    calcRender();
+    return;
+  }
+  const right = calcCurrent();
+  const result = calcApply(calculator.stored, calculator.operator, right);
+  calculator.history = `${calcFormat(calculator.stored)} ${calculator.operator} ${calcFormat(right)} =`;
+  calculator.entry = "";
+  calculator.operator = "";
+  calculator.waiting = true;
+  if (Number.isFinite(result)) {
+    calculator.value = result;
+    calculator.error = false;
+  } else {
+    calculator.error = true;
+  }
+  calcRender();
+}
+
+function calcPercent() {
+  // Sem conta em andamento: 25 → 0,25.
+  // Somando/subtraindo: 10% de 200 → soma ou tira 20.
+  // Multiplicando/dividindo: 10% vira 0,10.
+  const current = calcCurrent();
+  let result;
+  if (!calculator.operator) result = current / 100;
+  else if (calculator.operator === "+" || calculator.operator === "−") result = calculator.stored * current / 100;
+  else if (calculator.operator === "×") result = current / 100;
+  else result = current / 100;
+  calculator.entry = "";
+  calculator.value = result;
+  calculator.waiting = false;
+  if (calculator.operator) {
+    calculator.history = `${calcFormat(calculator.stored)} ${calculator.operator} ${calcFormat(result)}`;
+  }
+  calcRender();
+}
+
+function calcBackspace() {
+  if (calculator.error) { calcClear(); return; }
+  if (calculator.waiting) { calcClear(); return; }
+  calculator.entry = calculator.entry.slice(0, -1);
+  calculator.value = calcTypedNumber();
+  calcRender();
+}
+
+function calcClear() {
+  calculator.value = 0;
+  calculator.entry = "";
+  calculator.operator = "";
+  calculator.stored = 0;
+  calculator.waiting = false;
+  calculator.error = false;
+  calculator.history = "Pronta para calcular";
+  calcRender();
+}
+
+function calcHandle(action, data = {}) {
+  if (action === "digit") calcDigit(data.digit);
+  else if (action === "comma") calcDigit(",");
+  else if (action === "operator") calcOperator(data.operator);
+  else if (action === "equals") return calcEquals();
+  else if (action === "percent") return calcPercent();
+  else if (action === "back") return calcBackspace();
+  else if (action === "clear") return calcClear();
+  calcRender();
+}
+
+// Deixa a calculadora testável fora do navegador (testes automatizados).
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { calculator, calcFormat, calcDigit, calcOperator, calcEquals, calcPercent, calcClear };
+}
+
+const calculatorDialog = document.querySelector("#calculator-dialog");
+const calculatorKeys = document.querySelector("#calculator-keys");
+const calculatorToggle = document.querySelector("#calculator-toggle");
+calculatorToggle.addEventListener("click", () => {
+  calcRender();
+  calculatorDialog.showModal();
+});
+document.querySelector("#close-calculator").addEventListener("click", () => calculatorDialog.close());
+calculatorKeys.addEventListener("click", event => {
+  const button = event.target.closest("button[data-calc]");
+  if (!button) return;
+  if (button.dataset.calc === "digit") calcHandle("digit", { digit: button.dataset.digit });
+  else if (button.dataset.calc === "operator") calcHandle("operator", { operator: button.dataset.operator });
+  else calcHandle(button.dataset.calc);
+});
+calculatorDialog.addEventListener("keydown", event => {
+  const key = event.key;
+  const operatorMap = { "+": "+", "-": "−", "*": "×", "x": "×", "X": "×", "/": "÷" };
+  if (/^[0-9]$/.test(key)) { calcHandle("digit", { digit: key }); event.preventDefault(); }
+  else if (key === "," || key === ".") { calcHandle("comma"); event.preventDefault(); }
+  else if (operatorMap[key]) { calcHandle("operator", { operator: operatorMap[key] }); event.preventDefault(); }
+  else if (key === "Enter" || key === "=") { calcHandle("equals"); event.preventDefault(); }
+  else if (key === "%") { calcHandle("percent"); event.preventDefault(); }
+  else if (key === "Backspace") { calcHandle("back"); event.preventDefault(); }
+  else if (key === "Delete") { calcHandle("clear"); event.preventDefault(); }
+});
+
 /* ---------- Confirmações ---------- */
 const confirmDialog = document.querySelector("#confirm-dialog");
 
