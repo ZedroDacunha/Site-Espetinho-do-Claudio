@@ -858,3 +858,41 @@ form > label:first-of-type { margin-top: 0; }
 .simple-mode form > label, .simple-mode .edit-dialog form > label, .simple-mode .movement-dialog form > label { margin-top: var(--space-lg); }
 .simple-mode form > label:first-of-type { margin-top: 0; }
 .simple-mode .form-row { gap: var(--space-lg); }
+
+/* ---------- Fotos de produtos e insumos ---------- */
+.photo-field { display: grid; gap: var(--space-xs); margin-bottom: var(--space-lg); }
+.photo-label { font-size: var(--text-sm); font-weight: 700; }
+.photo-label span { font-weight: 400; color: var(--muted); }
+.photo-picker { display: flex; align-items: center; gap: var(--space-md); }
+.photo-preview {
+  width: 84px; height: 84px; flex: 0 0 84px; display: grid; place-items: center;
+  border: 1px dashed var(--line); border-radius: var(--radius-md); background: var(--surface-soft);
+  color: var(--muted); font-size: 24px; overflow: hidden; position: relative;
+}
+.photo-preview.has-photo { border-style: solid; }
+.photo-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-preview.uploading::after {
+  content: ""; position: absolute; inset: 0; background: color-mix(in srgb, var(--surface) 65%, transparent);
+  background-image: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 35%, transparent), transparent);
+  animation: photoLoading 1s linear infinite;
+}
+@keyframes photoLoading { from { background-position: -90px 0; } to { background-position: 90px 0; } }
+.photo-actions { display: grid; gap: var(--space-xs); justify-items: start; }
+.photo-actions .secondary-button { min-height: 40px; padding: 0 14px; }
+.photo-actions small { color: var(--muted); font-size: var(--text-sm); line-height: 1.5; max-width: 260px; }
+.photo-remove { border: 0; background: transparent; color: var(--red); font-size: var(--text-sm); font-weight: 700; cursor: pointer; padding: 4px 0; }
+.photo-remove:hover { text-decoration: underline; }
+
+/* Miniatura nas listas */
+.product-details { display: flex; align-items: center; gap: var(--space-md); min-width: 0; }
+.product-details > div { min-width: 0; }
+.product-thumb {
+  width: 44px; height: 44px; flex: 0 0 44px; border-radius: var(--radius-sm); object-fit: cover;
+  border: 1px solid var(--line); background: var(--surface-soft);
+}
+.simple-mode .product-thumb { width: 56px; height: 56px; flex-basis: 56px; }
+.simple-mode .photo-preview { width: 104px; height: 104px; flex-basis: 104px; }
+@media (max-width: 650px) {
+  .photo-picker { align-items: flex-start; }
+  .photo-actions small { max-width: none; }
+}

@@ -21,6 +21,15 @@ function asId(value, fieldName) {
   return id;
 }
 
+function normalizePhotoRef(value) {
+  if (value === undefined || value === null || value === "") return "";
+  const photo = String(value).trim();
+  if (photo.length > 500) throw new Error("Referência de foto muito longa.");
+  if (/^\/api\/photos\/[a-f0-9]{24}$/.test(photo)) return photo;
+  if (/^https?:\/\//i.test(photo)) return photo;
+  throw new Error("Referência de foto inválida.");
+}
+
 function stateRevision(state) {
   return crypto.createHash("sha256").update(JSON.stringify(state)).digest("hex");
 }
@@ -55,7 +64,8 @@ function normalizeSupplies(input) {
       id,
       nome: item.nome.trim(),
       unidade,
-      minimo: normalizeSupplyAmount(item.minimo, `Quantidade mínima do insumo ${item.nome}`)
+      minimo: normalizeSupplyAmount(item.minimo, `Quantidade mínima do insumo ${item.nome}`),
+      foto: normalizePhotoRef(item.foto)
     };
   });
 
@@ -118,7 +128,7 @@ function normalizeState(input) {
       || !Number.isSafeInteger(minimo) || minimo < 0 || minimo > MAX_STOCK_UNITS) {
       throw new Error(`Preço ou quantidade inválida no produto ${product.nome}.`);
     }
-    return { id, nome: product.nome.trim(), preco, quantidade, minimo };
+    return { id, nome: product.nome.trim(), preco, quantidade, minimo, foto: normalizePhotoRef(product.foto) };
   });
 
   const movementIds = new Set();
@@ -176,6 +186,27 @@ async function writeFileState(dataFile, nextState) {
   }
 }
 
+function photoFilePath(dataFile) {
+  return `${dataFile.replace(/\.json$/, "")}-fotos.json`;
+}
+
+async function readPhotoFile(dataFile) {
+  try {
+    return JSON.parse(await fs.readFile(photoFilePath(dataFile), "utf8"));
+  } catch (error) {
+    if (error.code === "ENOENT") return {};
+    throw error;
+  }
+}
+
+async function writePhotoFile(dataFile, photos) {
+  const file = photoFilePath(dataFile);
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  const temporaryFile = `${file}.${process.pid}.${Date.now()}.tmp`;
+  await fs.writeFile(temporaryFile, JSON.stringify(photos), { encoding: "utf8", mode: 0o600 });
+  await fs.rename(temporaryFile, file);
+}
+
 async function initializePostgres(pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS inventory_products (
@@ -229,13 +260,23 @@ async function initializePostgres(pool) {
   `);
   await pool.query("CREATE INDEX IF NOT EXISTS supply_movements_created_at_idx ON supply_movements (created_at DESC)");
   await pool.query("CREATE INDEX IF NOT EXISTS supply_items_name_idx ON supply_items (name)");
+  await pool.query("ALTER TABLE inventory_products ADD COLUMN IF NOT EXISTS photo TEXT NOT NULL DEFAULT ''");
+  await pool.query("ALTER TABLE supply_items ADD COLUMN IF NOT EXISTS photo TEXT NOT NULL DEFAULT ''");
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS inventory_photos (
+      id TEXT PRIMARY KEY,
+      mime VARCHAR(40) NOT NULL,
+      data BYTEA NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
 }
 
 async function readPostgresState(pool) {
   const [productsResult, movementsResult, suppliesResult, supplyMovementsResult] = await Promise.all([
-    pool.query("SELECT id, name, price, quantity, minimum FROM inventory_products ORDER BY name, id"),
+    pool.query("SELECT id, name, price, quantity, minimum, photo FROM inventory_products ORDER BY name, id"),
     pool.query("SELECT id, product_id, product_name, type, quantity, created_at, note FROM inventory_movements ORDER BY created_at DESC, id"),
-    pool.query("SELECT id, name, unit, minimum FROM supply_items ORDER BY name, id"),
+    pool.query("SELECT id, name, unit, minimum, photo FROM supply_items ORDER BY name, id"),
     pool.query("SELECT id, supply_id, supply_name, type, quantity, unit, created_at, note FROM supply_movements ORDER BY created_at DESC, id")
   ]);
   return normalizeState({
@@ -244,7 +285,8 @@ async function readPostgresState(pool) {
       nome: row.name,
       preco: Number(row.price),
       quantidade: Number(row.quantity),
-      minimo: Number(row.minimum)
+      minimo: Number(row.minimum),
+      foto: row.photo || ""
     })),
     movements: movementsResult.rows.map(row => ({
       id: row.id,
@@ -259,7 +301,8 @@ async function readPostgresState(pool) {
       id: row.id,
       nome: row.name,
       unidade: row.unit,
-      minimo: Number(row.minimum)
+      minimo: Number(row.minimum),
+      foto: row.photo || ""
     })),
     supplyMovements: supplyMovementsResult.rows.map(row => ({
       id: row.id,
@@ -338,9 +381,9 @@ async function writePostgresState(pool, previousState, nextState, expectedRevisi
       table: "inventory_products",
       previous: previousState.products,
       next: nextState.products,
-      columns: ["id", "name", "price", "quantity", "minimum", "updated_at"],
-      valuesFor: row => [row.id, row.nome, row.preco, row.quantidade, row.minimo, new Date().toISOString()],
-      updateColumns: ["name", "price", "quantity", "minimum", "updated_at"]
+      columns: ["id", "name", "price", "quantity", "minimum", "photo", "updated_at"],
+      valuesFor: row => [row.id, row.nome, row.preco, row.quantidade, row.minimo, row.foto || "", new Date().toISOString()],
+      updateColumns: ["name", "price", "quantity", "minimum", "photo", "updated_at"]
     });
     await syncTable(client, {
       table: "inventory_movements",
@@ -354,9 +397,9 @@ async function writePostgresState(pool, previousState, nextState, expectedRevisi
       table: "supply_items",
       previous: previousState.supplies || [],
       next: nextState.supplies,
-      columns: ["id", "name", "unit", "minimum", "updated_at"],
-      valuesFor: row => [row.id, row.nome, row.unidade, row.minimo, new Date().toISOString()],
-      updateColumns: ["name", "unit", "minimum", "updated_at"]
+      columns: ["id", "name", "unit", "minimum", "photo", "updated_at"],
+      valuesFor: row => [row.id, row.nome, row.unidade, row.minimo, row.foto || "", new Date().toISOString()],
+      updateColumns: ["name", "unit", "minimum", "photo", "updated_at"]
     });
     await syncTable(client, {
       table: "supply_movements",
@@ -522,12 +565,51 @@ function createApp({
     res.set("Cache-Control", "no-store").json({ authenticated: false });
   });
 
-  app.use("/api/state", (req, res, next) => {
+  const requireSession = (req, res, next) => {
     if (appPassword && !validSession(req.headers.cookie, secret)) {
       return res.status(401).json({ error: "Sua sessão expirou. Entre novamente." });
     }
     next();
+  };
+
+  // Fotos de produtos e insumos, guardadas no próprio banco
+  app.post("/api/photos", requireSession, express.json({ limit: "6mb" }), async (req, res, next) => {
+    try {
+      await ready;
+      const { dataUrl } = req.body || {};
+      const match = typeof dataUrl === "string" ? dataUrl.match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/) : null;
+      if (!match) return res.status(400).json({ error: "Envie uma imagem JPG, PNG ou WebP." });
+      const photo = Buffer.from(match[2], "base64");
+      if (!photo.length) return res.status(400).json({ error: "A imagem está vazia." });
+      if (photo.length > 4 * 1024 * 1024) return res.status(413).json({ error: "A imagem deve ter no máximo 4 MB." });
+      const id = crypto.randomBytes(12).toString("hex");
+      if (pool) {
+        await pool.query("INSERT INTO inventory_photos (id, mime, data, created_at) VALUES ($1, $2, $3, NOW())", [id, `image/${match[1]}`, photo]);
+      } else {
+        const photos = await readPhotoFile(dataFile);
+        photos[id] = { mime: `image/${match[1]}`, data: photo.toString("base64"), createdAt: new Date().toISOString() };
+        await writePhotoFile(dataFile, photos);
+      }
+      res.set("Cache-Control", "no-store").json({ id, url: `/api/photos/${id}` });
+    } catch (error) { next(error); }
   });
+  app.get("/api/photos/:id", requireSession, async (req, res, next) => {
+    try {
+      await ready;
+      const id = String(req.params.id || "");
+      if (!/^[a-f0-9]{24}$/.test(id)) return res.status(404).send("Foto não encontrada.");
+      const photo = pool
+        ? (await pool.query("SELECT mime, data FROM inventory_photos WHERE id = $1", [id])).rows[0]
+        : (await readPhotoFile(dataFile))[id];
+      if (!photo) return res.status(404).send("Foto não encontrada.");
+      const buffer = photo.data instanceof Buffer ? photo.data : Buffer.from(photo.data, "base64");
+      res.set("Content-Type", photo.mime);
+      res.set("Cache-Control", "private, max-age=604800");
+      res.send(buffer);
+    } catch (error) { next(error); }
+  });
+
+  app.use("/api/state", requireSession);
   app.get("/api/state", async (req, res, next) => {
     try {
       await ready;

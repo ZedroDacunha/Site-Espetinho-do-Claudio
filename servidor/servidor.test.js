@@ -51,7 +51,8 @@ test("serve the site and persist stock and movement history across server restar
   });
   assert.equal(saved.status, 200);
   const savedState = await saved.json();
-  assert.deepEqual(savedState.products, data.products);
+  // O servidor devolve a foto sempre como string (vazia quando não há imagem).
+  assert.deepEqual(savedState.products, data.products.map(product => ({ ...product, foto: "" })));
   assert.deepEqual(savedState.movements, data.movements);
   assert.notEqual(savedState.revision, empty.revision);
 
@@ -73,7 +74,7 @@ test("serve the site and persist stock and movement history across server restar
 
   secondInstance = await launch(dataFile);
   const restored = await fetch(`${secondInstance.baseUrl}/api/state`).then(response => response.json());
-  assert.deepEqual(restored.products, data.products);
+  assert.deepEqual(restored.products, data.products.map(product => ({ ...product, foto: "" })));
   assert.deepEqual(restored.movements, data.movements);
 });
 

@@ -7,6 +7,28 @@ const SUPPLY_MOVEMENTS_KEY = "espetinhos-claudio-insumos-mov-v1";
 const SUPPLY_UNITS = { un: "un.", kg: "kg", g: "g", pacote: "pac.", litro: "L" };
 const BACKUP_KEY = "espetinhos-claudio-ultimo-backup";
 
+const productPhotoPicker = bindPhotoPicker({
+  input: document.querySelector("#product-photo-input"),
+  preview: document.querySelector("#product-photo-preview"),
+  remove: document.querySelector("#product-photo-remove"),
+  current: ""
+});
+document.querySelector("#product-photo-choose").addEventListener("click", () => document.querySelector("#product-photo-input").click());
+document.querySelector("#edit-photo-choose").addEventListener("click", () => document.querySelector("#edit-photo-input").click());
+document.querySelector("#supply-photo-choose").addEventListener("click", () => document.querySelector("#supply-photo-input").click());
+const editPhotoPicker = bindPhotoPicker({
+  input: document.querySelector("#edit-photo-input"),
+  preview: document.querySelector("#edit-photo-preview"),
+  remove: document.querySelector("#edit-photo-remove"),
+  current: ""
+});
+const supplyPhotoPicker = bindPhotoPicker({
+  input: document.querySelector("#supply-photo-input"),
+  preview: document.querySelector("#supply-photo-preview"),
+  remove: document.querySelector("#supply-photo-remove"),
+  current: ""
+});
+
 const form = document.querySelector("#form-produto");
 const nomeInput = document.querySelector("#nome");
 const precoInput = document.querySelector("#preco");
@@ -46,6 +68,7 @@ function loadProducts() {
 
 function isValidProduct(product) {
   return product && typeof product.nome === "string" && product.nome.trim().length > 0
+    && (product.foto === undefined || typeof product.foto === "string")
     && Number.isFinite(Number(product.preco)) && Number(product.preco) >= 0
     && Number.isInteger(Number(product.quantidade)) && Number(product.quantidade) >= 0
     && Number.isInteger(Number(product.minimo)) && Number(product.minimo) >= 0;
@@ -68,8 +91,106 @@ function isValidMovement(movement) {
     && typeof movement.createdAt === "string" && Number.isFinite(Date.parse(movement.createdAt));
 }
 
+/* ---------- Fotos de produtos e insumos ---------- */
+const PHOTO_MAX_BYTES = 4 * 1024 * 1024;
+const PHOTO_MAX_SIDE = 900;
+
+async function compressedPhotoDataUrl(file) {
+  if (!file) throw new Error("Escolha uma imagem.");
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) throw new Error("Envie uma imagem JPG, PNG ou WebP.");
+  if (file.size > 12 * 1024 * 1024) throw new Error("A imagem original é muito grande (limite de 12 MB).");
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, PHOTO_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close?.();
+  let quality = 0.82;
+  let dataUrl = canvas.toDataURL("image/jpeg", quality);
+  while (dataUrl.length * 0.75 > PHOTO_MAX_BYTES && quality > 0.4) {
+    quality -= 0.12;
+    dataUrl = canvas.toDataURL("image/jpeg", quality);
+  }
+  if (dataUrl.length * 0.75 > PHOTO_MAX_BYTES) throw new Error("A imagem continua grande. Tente outra foto.");
+  return dataUrl;
+}
+
+async function uploadPhoto(file) {
+  const dataUrl = await compressedPhotoDataUrl(file);
+  const response = await fetch("/api/photos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dataUrl })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "Não foi possível enviar a foto.");
+  if (typeof data.url !== "string") throw new Error("O servidor não devolveu o endereço da foto.");
+  return data.url;
+}
+
+function photoUrl(photo) {
+  if (!photo) return "";
+  if (/^\/api\/photos\/[a-f0-9]{24}$/.test(photo)) return photo;
+  if (/^https?:\/\//i.test(photo)) return photo;
+  return "";
+}
+
+function paintPhotoPreview(element, photo) {
+  if (!element) return;
+  const url = photoUrl(photo);
+  element.replaceChildren();
+  element.classList.toggle("has-photo", Boolean(url));
+  if (!url) {
+    element.textContent = "📷";
+    return;
+  }
+  const image = document.createElement("img");
+  image.src = url;
+  image.alt = "";
+  image.loading = "lazy";
+  image.decoding = "async";
+  element.append(image);
+}
+
+function bindPhotoPicker({ input, preview, remove, current }) {
+  let pending = current;
+  const paint = () => {
+    paintPhotoPreview(preview, pending);
+    if (remove) remove.hidden = !pending;
+  };
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    preview.classList.add("uploading");
+    const previous = pending;
+    try {
+      pending = await uploadPhoto(file);
+      paint();
+      showStatus("Foto enviada.");
+    } catch (error) {
+      pending = previous;
+      paint();
+      showStatus(error.message, true);
+    } finally {
+      preview.classList.remove("uploading");
+    }
+  });
+  if (remove) remove.addEventListener("click", () => {
+    pending = "";
+    paint();
+  });
+  return {
+    get value() { return pending; },
+    set value(next) { pending = next || ""; paint(); },
+    paint
+  };
+}
+
 function isValidSupply(item) {
   return item && typeof item.nome === "string" && item.nome.trim().length > 0
+    && (item.foto === undefined || typeof item.foto === "string")
     && Object.prototype.hasOwnProperty.call(SUPPLY_UNITS, item.unidade)
     && Number.isFinite(Number(item.minimo)) && Number(item.minimo) >= 0;
 }
@@ -299,6 +420,28 @@ function createProductRow(product) {
   row.className = "product-row";
 
   const details = document.createElement("div");
+  details.className = "product-details";
+  const url = photoUrl(product.foto);
+  if (url) {
+    const thumb = document.createElement("img");
+    thumb.className = "product-thumb";
+    thumb.src = url;
+    thumb.alt = "";
+    thumb.loading = "lazy";
+    thumb.decoding = "async";
+    const text = document.createElement("div");
+    const name = document.createElement("p");
+    name.className = "product-name";
+    name.textContent = product.nome;
+    const price = document.createElement("span");
+    price.className = "product-price";
+    price.textContent = `${formatMoney(Number(product.preco))} por unidade`;
+    text.append(name, price);
+    details.append(thumb, text);
+    const quantity = Number(product.quantidade);
+    const minimum = Number(product.minimo) || 0;
+    return finishProductRow(row, details, quantity, minimum, product);
+  }
   const name = document.createElement("p");
   name.className = "product-name";
   name.textContent = product.nome;
@@ -306,9 +449,10 @@ function createProductRow(product) {
   price.className = "product-price";
   price.textContent = `${formatMoney(Number(product.preco))} por unidade`;
   details.append(name, price);
+  return finishProductRow(row, details, Number(product.quantidade), Number(product.minimo) || 0, product);
+}
 
-  const quantity = Number(product.quantidade);
-  const minimum = Number(product.minimo) || 0;
+function finishProductRow(row, details, quantity, minimum, product) {
   const badgeBox = document.createElement("div");
   badgeBox.className = "stock-status";
   const statusLabel = document.createElement("span");
@@ -608,7 +752,8 @@ form.addEventListener("submit", async event => {
     nome: nomeInput.value.trim(),
     preco: Number(precoInput.value),
     quantidade: Number(quantidadeInput.value),
-    minimo: Number(minimoInput.value)
+    minimo: Number(minimoInput.value),
+    foto: productPhotoPicker.value
   };
   if (!product.nome || product.preco < 0 || product.quantidade < 0 || product.minimo < 0) return;
   const previousProducts = products;
@@ -618,6 +763,7 @@ form.addEventListener("submit", async event => {
   if (await saveInventory()) {
     renderProducts();
     form.reset();
+    productPhotoPicker.value = "";
     searchInput.value = "";
     nomeInput.focus();
     showStatus(`${product.nome} cadastrado.${backupReminder()}`);
@@ -629,6 +775,7 @@ form.addEventListener("submit", async event => {
 
 function openEditDialog(product) {
   document.querySelector("#edit-id").value = product.id;
+  editPhotoPicker.value = product.foto || "";
   document.querySelector("#edit-nome").value = product.nome;
   document.querySelector("#edit-preco").value = product.preco;
   document.querySelector("#edit-quantidade").value = product.quantidade;
@@ -653,6 +800,7 @@ editForm.addEventListener("submit", async event => {
   product.preco = Number(document.querySelector("#edit-preco").value);
   product.quantidade = Number(document.querySelector("#edit-quantidade").value);
   product.minimo = Number(document.querySelector("#edit-minimo").value);
+  product.foto = editPhotoPicker.value;
   if (!product.nome || !isValidProduct(product)) {
     Object.assign(product, previous);
     showStatus("Confira os dados do produto antes de salvar.", true);
@@ -816,6 +964,7 @@ function createSupplyRow(item) {
   row.className = "product-row supply-row";
 
   const details = document.createElement("div");
+  details.className = "product-details";
   const name = document.createElement("p");
   name.className = "product-name";
   name.textContent = item.nome;
@@ -823,7 +972,20 @@ function createSupplyRow(item) {
   meta.className = "product-price";
   const minimum = Number(item.minimo);
   meta.textContent = `Avisar quando chegar em ${formatSupplyAmount(minimum, item.unidade)}`;
-  details.append(name, meta);
+  const url = photoUrl(item.foto);
+  if (url) {
+    const thumb = document.createElement("img");
+    thumb.className = "product-thumb";
+    thumb.src = url;
+    thumb.alt = "";
+    thumb.loading = "lazy";
+    thumb.decoding = "async";
+    const text = document.createElement("div");
+    text.append(name, meta);
+    details.append(thumb, text);
+  } else {
+    details.append(name, meta);
+  }
 
   const amountBox = document.createElement("div");
   amountBox.className = "supply-amount-box";
@@ -931,6 +1093,7 @@ function openSupplyDialog(item = null) {
   document.querySelector("#supply-name").value = item ? item.nome : "";
   document.querySelector("#supply-unit").value = item ? item.unidade : "un";
   document.querySelector("#supply-minimum").value = item ? item.minimo : "";
+  supplyPhotoPicker.value = item ? item.foto || "" : "";
   supplyDialog.showModal();
   document.querySelector("#supply-name").focus();
 }
@@ -948,13 +1111,14 @@ supplyForm.addEventListener("submit", async event => {
   const nome = document.querySelector("#supply-name").value.trim();
   const unidade = document.querySelector("#supply-unit").value;
   const minimo = Number(document.querySelector("#supply-minimum").value);
+  const foto = supplyPhotoPicker.value;
   if (!nome || !Object.prototype.hasOwnProperty.call(SUPPLY_UNITS, unidade) || !Number.isFinite(minimo) || minimo < 0) {
     showStatus("Confira o nome, a medida e o aviso mínimo.", true);
     return;
   }
   const previousSupplies = supplies;
   if (id) {
-    supplies = supplies.map(item => String(item.id) === id ? { ...item, nome, unidade } : item);
+    supplies = supplies.map(item => String(item.id) === id ? { ...item, nome, unidade, foto } : item);
     const target = findSupply(id);
     if (target) target.minimo = minimo;
     if (!await saveInventory()) { supplies = previousSupplies; return; }
@@ -962,7 +1126,7 @@ supplyForm.addEventListener("submit", async event => {
     renderSupplies();
     showStatus(`${nome} atualizado.`);
   } else {
-    supplies = [...supplies, { id: newProductId(), nome, unidade, minimo }];
+    supplies = [...supplies, { id: newProductId(), nome, unidade, minimo, foto }];
     if (!await saveInventory()) { supplies = previousSupplies; return; }
     supplyDialog.close();
     renderSupplies();
@@ -1137,7 +1301,8 @@ backupFileInput.addEventListener("change", async () => {
       nome: product.nome.trim(),
       preco: Number(product.preco),
       quantidade: Number(product.quantidade),
-      minimo: Number(product.minimo)
+      minimo: Number(product.minimo),
+      foto: typeof product.foto === "string" ? product.foto : ""
     }));
     const ids = new Set();
     for (const product of imported) {
@@ -1154,7 +1319,8 @@ backupFileInput.addEventListener("change", async () => {
         id: item.id === undefined || item.id === null ? newProductId() : String(item.id),
         nome: item.nome.trim(),
         unidade: item.unidade,
-        minimo: Number(item.minimo)
+        minimo: Number(item.minimo),
+        foto: typeof item.foto === "string" ? item.foto : ""
       }));
     }
     if (backup.supplyMovements !== undefined) {
