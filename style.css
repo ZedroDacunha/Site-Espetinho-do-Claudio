@@ -486,9 +486,6 @@ footer strong { color: var(--text); font-weight: 600; }
 .history-details-body .movement-panel { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
 
 /* Diálogo de entrada/saída mais claro */
-.quick-amounts { display: flex; gap: 7px; margin: -8px 0 12px; }
-.quick-amounts button { flex: 1; min-height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); color: var(--text); font: 700 13px 'DM Sans', sans-serif; cursor: pointer; }
-.quick-amounts button:hover { border-color: var(--accent); color: var(--accent); }
 .movement-preview { margin: 0 0 18px; color: var(--muted); font-size: 12px; font-weight: 600; }
 .movement-preview.invalid { color: var(--red); }
 .movement-dialog label { font-size: 12px; }
@@ -499,3 +496,46 @@ footer strong { color: var(--text); font-weight: 600; }
   .history-details > summary { padding: 15px 16px; }
   .history-details-body { padding: 0 16px 16px; }
 }
+
+/* Interruptor do modo simples */
+.mode-switch { display: flex; align-items: center; gap: 9px; margin: 0 10px 12px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-soft); cursor: pointer; }
+.mode-switch input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+.mode-switch-text { display: grid; gap: 1px; }
+.mode-switch-text strong { font-size: 12px; font-weight: 700; }
+.mode-switch-text small { color: var(--muted); font-size: 10px; }
+
+/* Teclado numérico de entrada e saída */
+.keypad-display { display: flex; align-items: baseline; justify-content: center; gap: 6px; margin-bottom: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); }
+.keypad-display span { font: 800 34px 'Manrope', sans-serif; line-height: 1; }
+.keypad-display small { color: var(--muted); font-size: 13px; font-weight: 600; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.keypad button { min-height: 52px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); color: var(--text); font: 700 21px 'Manrope', sans-serif; cursor: pointer; transition: .15s; }
+.keypad button:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.keypad button:active { transform: scale(.97); }
+.keypad-secondary { font: 600 12px 'DM Sans', sans-serif !important; color: var(--muted) !important; }
+.movement-dialog #movement-quantity { height: 44px; font-size: 18px; text-align: center; }
+.movement-dialog #movement-note { margin-top: 4px; }
+
+/* Modo simples: tudo maior e mais espaçado */
+.simple-mode .stat-value { font-size: 36px; }
+.simple-mode .stat-label { font-size: 14px; }
+.simple-mode .stat-note { font-size: 12px; }
+.simple-mode .product-name { font-size: 18px; }
+.simple-mode .product-price { font-size: 14px; }
+.simple-mode .stock-badge { font-size: 13px; padding: 8px 12px; }
+.simple-mode .movement-trigger { min-height: 48px; padding: 0 16px; font-size: 15px; }
+.simple-mode .edit-button, .simple-mode .delete-button { font-size: 14px; }
+.simple-mode .sidebar .nav-link { font-size: 15px; padding-top: 11px; padding-bottom: 11px; }
+.simple-mode .sidebar-heading { font-size: 11px; }
+.simple-mode .page-heading h1 { font-size: 34px; }
+.simple-mode .intro-copy { font-size: 14px; }
+.simple-mode .low-stock-row strong { font-size: 17px; }
+.simple-mode .low-stock-row > span { font-size: 13px; }
+.simple-mode .product-row { padding: 16px; }
+.simple-mode .movement-heading h2, .simple-mode .section-heading h2 { font-size: 20px; }
+.simple-mode .keypad button { min-height: 60px; font-size: 24px; }
+.simple-mode .status-message { font-size: 14px; }
+.simple-mode .quick-actions .primary-link { min-height: 54px; font-size: 16px; }
+.simple-mode .movement-dialog label, .simple-mode .edit-dialog label { font-size: 14px; }
+.simple-mode .movement-dialog input[type="number"], .simple-mode .movement-dialog input[type="text"] { height: 52px; font-size: 18px; }
+.simple-mode .dialog-actions .primary-button, .simple-mode .cancel-button { min-height: 50px; font-size: 15px; }

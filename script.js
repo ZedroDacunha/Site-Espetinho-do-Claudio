@@ -1,6 +1,7 @@
 const STORAGE_KEY = "espetinhos-claudio-produtos-v1";
 const MOVEMENTS_KEY = "espetinhos-claudio-movimentacoes-v1";
 const THEME_KEY = "espetinhos-claudio-tema";
+const SIMPLE_MODE_KEY = "espetinhos-claudio-modo-simples";
 const BACKUP_KEY = "espetinhos-claudio-ultimo-backup";
 
 const form = document.querySelector("#form-produto");
@@ -575,6 +576,21 @@ editForm.addEventListener("submit", async event => {
 const movementDialog = document.querySelector("#movement-dialog");
 const movementForm = document.querySelector("#movement-form");
 const movementQuantityInput = document.querySelector("#movement-quantity");
+const simpleModeToggle = document.querySelector("#simple-mode");
+
+function applySimpleMode(enabled) {
+  document.body.classList.toggle("simple-mode", enabled);
+  if (simpleModeToggle) simpleModeToggle.checked = enabled;
+  try { localStorage.setItem(SIMPLE_MODE_KEY, enabled ? "1" : "0"); } catch (_) { /* A preferência é opcional. */ }
+}
+
+if (simpleModeToggle) {
+  let initialSimpleMode = false;
+  try { initialSimpleMode = localStorage.getItem(SIMPLE_MODE_KEY) === "1"; } catch (_) { /* Usa o padrão normal. */ }
+  applySimpleMode(initialSimpleMode);
+  simpleModeToggle.addEventListener("change", () => applySimpleMode(simpleModeToggle.checked));
+}
+
 const movementAmountPreview = document.querySelector("#movement-amount-preview");
 
 function updateMovementPreview() {
@@ -601,6 +617,7 @@ function openMovementDialog(product, type) {
   document.querySelector("#movement-submit").textContent = type === "entrada" ? "Confirmar entrada" : "Confirmar saída";
   document.querySelector("#movement-product-info").textContent = `${product.nome} · ${product.quantidade} unidade(s) em estoque`;
   movementQuantityInput.value = "";
+  syncMovementDisplay();
   if (type === "saida") movementQuantityInput.max = product.quantidade;
   else movementQuantityInput.removeAttribute("max");
   document.querySelector("#movement-note").value = "";
@@ -609,12 +626,28 @@ function openMovementDialog(product, type) {
   movementQuantityInput.focus();
 }
 
-document.querySelectorAll("[data-quick-amount]").forEach(button => button.addEventListener("click", () => {
-  const amount = Number(button.dataset.quickAmount);
-  const current = Number(movementQuantityInput.value) || 0;
-  movementQuantityInput.value = String(current + amount);
+const movementDisplay = document.querySelector("#movement-display");
+
+function syncMovementDisplay() {
+  if (movementDisplay) movementDisplay.textContent = movementQuantityInput.value || "0";
+}
+
+function pressKeypadKey(key) {
+  const current = movementQuantityInput.value.replace(/\D/g, "");
+  let next = current;
+  if (key === "clear") next = "";
+  else if (key === "back") next = current.slice(0, -1);
+  else if (current === "0") next = key;
+  else if (current.length < 6) next = `${current}${key}`;
+  movementQuantityInput.value = next;
   movementQuantityInput.dispatchEvent(new Event("input"));
+}
+
+document.querySelectorAll("[data-key]").forEach(button => button.addEventListener("click", () => {
+  pressKeypadKey(button.dataset.key);
 }));
+
+movementQuantityInput.addEventListener("input", syncMovementDisplay);
 
 document.querySelector("#cancel-movement").addEventListener("click", () => movementDialog.close());
 document.querySelector("#close-movement").addEventListener("click", () => movementDialog.close());

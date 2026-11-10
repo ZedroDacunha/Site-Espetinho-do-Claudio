@@ -51,6 +51,7 @@
           <a class="nav-link" href="#importacoes" data-view-link><span class="nav-icon" aria-hidden="true">↕</span><span>Importações</span></a>
           <a class="nav-link" href="#cadastro" data-view-link><span class="nav-icon" aria-hidden="true">＋</span><span>Cadastro</span></a>
         </nav>
+        <label class="mode-switch" for="simple-mode"><input id="simple-mode" type="checkbox"><span class="mode-switch-text"><strong>Modo simples</strong><small>Letras e botões maiores</small></span></label>
         <div class="sidebar-note"><span class="note-icon" aria-hidden="true">✓</span><p>Estoque salvo no servidor desta aplicação.</p></div>
         <div class="sidebar-footer">ESPETINHOS DO CLAUDIO</div>
       </aside>
@@ -156,8 +157,15 @@
         <div class="section-heading"><div><p class="eyebrow">MOVIMENTAÇÃO DE ESTOQUE</p><h2 id="movement-dialog-title">Registrar entrada</h2></div><button class="dialog-close" id="close-movement" type="button" aria-label="Fechar">×</button></div>
         <input id="movement-product-id" type="hidden"><input id="movement-type" type="hidden">
         <p class="movement-product-info" id="movement-product-info"></p>
-        <label for="movement-quantity">Quantidade de unidades</label><input id="movement-quantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Ex.: 5" required>
-        <div class="quick-amounts" role="group" aria-label="Quantidades rápidas"><button type="button" data-quick-amount="1">+1</button><button type="button" data-quick-amount="5">+5</button><button type="button" data-quick-amount="10">+10</button><button type="button" data-quick-amount="20">+20</button></div>
+        <label for="movement-quantity">Quantidade de unidades</label>
+        <div class="keypad-display" aria-hidden="true"><span id="movement-display">0</span><small>un.</small></div>
+        <input id="movement-quantity" type="number" min="1" step="1" inputmode="numeric" placeholder="Ex.: 5" required>
+        <div class="keypad" id="movement-keypad" role="group" aria-label="Teclado numérico">
+          <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button>
+          <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button>
+          <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
+          <button type="button" data-key="clear" class="keypad-secondary">Limpar</button><button type="button" data-key="0">0</button><button type="button" data-key="back" class="keypad-secondary" aria-label="Apagar último dígito">⌫</button>
+        </div>
         <p class="movement-preview" id="movement-amount-preview"></p>
         <label for="movement-note">Observação <span>(opcional)</span></label><input id="movement-note" type="text" maxlength="120" placeholder="Ex.: reposição do fornecedor">
         <div class="dialog-actions"><button class="cancel-button" id="cancel-movement" type="button">Cancelar</button><button class="primary-button" id="movement-submit" type="submit">Confirmar entrada</button></div>
