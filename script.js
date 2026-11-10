@@ -873,6 +873,10 @@ const simpleModeToggle = document.querySelector("#simple-mode");
 function applySimpleMode(enabled) {
   document.body.classList.toggle("simple-mode", enabled);
   if (simpleModeToggle) simpleModeToggle.checked = enabled;
+  const simpleOn = document.querySelector("#setting-simple-on");
+  const simpleOff = document.querySelector("#setting-simple-off");
+  if (simpleOn) simpleOn.checked = enabled;
+  if (simpleOff) simpleOff.checked = !enabled;
   try { localStorage.setItem(SIMPLE_MODE_KEY, enabled ? "1" : "0"); } catch (_) { /* A preferência é opcional. */ }
 }
 
@@ -1335,12 +1339,14 @@ function lastBackupDate() {
 }
 
 function renderBackupMeta() {
-  const meta = document.querySelector("#backup-meta");
-  if (!meta) return;
   const date = lastBackupDate();
-  meta.textContent = date
+  const message = date
     ? `Último backup baixado neste navegador em ${new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(date)}.`
     : "Nenhum backup baixado neste navegador ainda.";
+  ["#backup-meta", "#backup-meta-settings"].forEach(selector => {
+    const meta = document.querySelector(selector);
+    if (meta) meta.textContent = message;
+  });
 }
 
 function backupReminder() {
@@ -1471,7 +1477,7 @@ function makeMovement(product, type, quantity, note = "") {
 searchInput.addEventListener("input", renderProducts);
 
 
-const validViews = new Set(["inicio", "estoque", "insumos", "importacoes", "cadastro"]);
+const validViews = new Set(["inicio", "estoque", "insumos", "importacoes", "cadastro", "configuracoes"]);
 function activateView(viewName) {
   const activeView = validViews.has(viewName) ? viewName : "inicio";
   document.querySelectorAll(".view").forEach(view => { view.hidden = view.id !== activeView; });
@@ -1520,6 +1526,10 @@ function applyTheme(theme) {
   themeToggle.querySelector(".theme-label").textContent = dark ? "Modo claro" : "Modo escuro";
   themeToggle.setAttribute("aria-label", dark ? "Ativar modo claro" : "Ativar modo escuro");
   document.querySelector('meta[name="theme-color"]').content = dark ? "#171816" : "#f7f5f0";
+  const themeLight = document.querySelector("#setting-theme-light");
+  const themeDark = document.querySelector("#setting-theme-dark");
+  if (themeLight) themeLight.checked = !dark;
+  if (themeDark) themeDark.checked = dark;
   try { localStorage.setItem(THEME_KEY, theme); } catch (_) { /* O tema ainda funciona durante esta sessão. */ }
 }
 
@@ -1529,6 +1539,15 @@ try {
 } catch (_) { /* Usa o tema claro se o armazenamento estiver indisponível. */ }
 applyTheme(initialTheme);
 themeToggle.addEventListener("click", () => applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
+
+document.querySelectorAll('input[name="setting-theme"]').forEach(input => {
+  input.addEventListener("change", () => { if (input.checked) applyTheme(input.value); });
+});
+document.querySelectorAll('input[name="setting-simple"]').forEach(input => {
+  input.addEventListener("change", () => { if (input.checked) applySimpleMode(input.value === "on"); });
+});
+document.querySelector("#settings-export").addEventListener("click", () => document.querySelector("#export-backup").click());
+document.querySelector("#settings-logout").addEventListener("click", () => logoutButton.click());
 
 loginForm.addEventListener("submit", async event => {
   event.preventDefault();
@@ -1599,12 +1618,14 @@ async function initializeApp() {
       appShell.hidden = true;
       loginScreen.hidden = false;
       logoutButton.hidden = true;
+      document.querySelector("#settings-logout").hidden = true;
       loginError.textContent = "";
       return;
     }
     appShell.hidden = false;
     loginScreen.hidden = true;
     logoutButton.hidden = !session.loginRequired;
+    document.querySelector("#settings-logout").hidden = !session.loginRequired;
 
     const response = await fetch("/api/state", { cache: "no-store" });
     if (!response.ok) throw new Error("O servidor não respondeu corretamente.");
@@ -1644,6 +1665,7 @@ async function initializeApp() {
     appShell.hidden = false;
     loginScreen.hidden = true;
     logoutButton.hidden = true;
+    document.querySelector("#settings-logout").hidden = true;
     products = loadProducts();
     movements = loadMovements();
     supplies = loadSupplies();
