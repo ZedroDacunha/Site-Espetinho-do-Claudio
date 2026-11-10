@@ -635,3 +635,100 @@ form input, .edit-dialog input, .movement-dialog input, .supply-unit-select { he
 
 /* Modo simples: aumenta tudo mantendo a mesma hierarquia */
 .simple-mode { --text-sm: 13px; --text-base: 15px; --text-md: 16px; --text-lg: 18px; --title-section: 21px; --title-page: 36px; }
+
+/* ---------- Colunas alinhadas nas listas ---------- */
+/* Cabeçalho de colunas, igual ao alinhamento das linhas */
+.list-header { display: grid; grid-template-columns: minmax(130px, 1fr) auto auto auto; align-items: center; gap: 17px; padding: 0 14px 8px; }
+.list-header .column-label { text-align: right; }
+.list-header .column-label:last-child { text-align: left; }
+.main-content .list-header { grid-template-columns: minmax(130px, 1fr) auto auto auto; }
+
+/* Rótulos de coluna: únicos por linha em telas pequenas */
+.column-label { display: none; color: var(--muted); font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .7px; }
+.list-header .column-label { display: block; }
+
+/* Blocos de status e quantidade alinhados à direita, com números tabulares */
+.stock-status, .stock-controls, .supply-amount-box { display: grid; gap: 4px; justify-items: end; }
+.quantity-value, .supply-amount { font-variant-numeric: tabular-nums; text-align: right; }
+.stock-badge { font-variant-numeric: tabular-nums; }
+
+/* Insumos usam a mesma estrutura de colunas dos produtos */
+.supply-row, .supply-row .list-header { grid-template-columns: minmax(130px, 1fr) auto auto auto; }
+
+@media (max-width: 1100px) {
+  .list-header { display: none; }
+  .product-row .column-label, .supply-row .column-label { display: block; }
+  .stock-status, .stock-controls, .supply-amount-box { justify-items: start; }
+  .quantity-value, .supply-amount { text-align: left; }
+}
+
+@media (max-width: 650px) {
+  .stock-status, .supply-amount-box { justify-items: end; }
+  .stock-controls { grid-column: 1 / -1; justify-items: start; }
+}
+
+/* ---------- Valores em dinheiro e números alinhados ---------- */
+/* Números grandes dos cartões: dígitos com a mesma largura e sem quebra */
+.stat-value, .movement-amount, .report-row-head span, .supply-amount, .quantity-value, .low-stock-row > span { font-variant-numeric: tabular-nums; }
+.stat-value { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.report-row-head span, .movement-amount { text-align: right; }
+
+/* Painel de movimento/histórico segue o mesmo ritmo dos demais painéis */
+.dashboard-panel, .report-panel, .movement-panel, .inventory-panel, .add-panel, .import-panel { margin-top: 0; }
+.dashboard-panel + .dashboard-panel, .inventory-panel + .history-details, .stats + .dashboard-panel { margin-top: var(--space-md); }
+.quick-actions { margin-top: var(--space-md); }
+.stats { margin-bottom: var(--space-lg); }
+.view > .panel + .panel, .view > .panel + .history-details, .view > .history-details + .panel { margin-top: var(--space-md); }
+
+/* Última linha de cada lista sem borda duplicada com o rodapé */
+.product-row:last-child, .low-stock-row:last-child, .movement-row:last-child { border-bottom: 0; }
+
+/* ---------- Títulos de linha e textos secundários padronizados ---------- */
+/* Toda linha de lista usa o mesmo par: título 14px + texto de apoio 11px */
+.low-stock-row strong,
+.report-row-head strong,
+.movement-details strong,
+.low-stock-empty strong,
+.backup-card h3,
+.empty-state h3 { font-size: var(--text-md); font-weight: 700; line-height: 1.4; }
+
+.low-stock-row > span,
+.report-meta,
+.movement-details > span,
+.low-stock-empty p,
+.supply-row .product-price { font-size: var(--text-sm); line-height: 1.5; }
+
+/* Nome do produto/insumo é o único com destaque maior */
+.product-name { font-size: var(--title-card); }
+
+/* Quantidades e valores das linhas com o mesmo peso visual */
+.quantity-value, .supply-amount, .movement-amount, .report-row-head span { font-weight: 700; font-size: var(--text-md); }
+.movement-amount { font-size: var(--text-sm); }
+
+/* Tabela de histórico também alinhada à direita na coluna de quantidade */
+.movement-row { align-items: center; }
+.movement-amount { min-width: 72px; text-align: right; }
+
+/* ---------- Histórico em colunas, igual às demais listas ---------- */
+.movement-columns,
+.movement-row { display: grid; grid-template-columns: minmax(150px, 1fr) 110px 96px; align-items: center; gap: 17px; }
+.movement-columns { padding: 0 2px 8px; }
+.movement-row { min-height: 58px; padding: 10px 2px; border-top: 1px solid var(--line); justify-content: normal; }
+.movement-type-box, .movement-quantity-box { display: grid; gap: 4px; justify-items: end; }
+.movement-amount { border-radius: 20px; padding: 5px 10px; font-size: var(--text-sm); font-weight: 700; }
+.movement-quantity { font-size: var(--text-md); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.movement-amount.entrada { background: var(--green-soft); color: var(--green); }
+.movement-amount.saida { background: var(--red-soft); color: var(--red); }
+.movement-amount.ajuste { background: var(--yellow-soft); color: var(--yellow); }
+
+@media (max-width: 1100px) {
+  .movement-columns { display: none; }
+  .movement-row .column-label { display: block; }
+  .movement-type-box, .movement-quantity-box { justify-items: start; }
+  .movement-quantity { text-align: left; }
+}
+@media (max-width: 650px) {
+  .movement-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .movement-type-box { justify-items: start; }
+  .movement-quantity-box { grid-column: 1 / -1; grid-template-columns: auto auto; align-items: center; justify-content: space-between; justify-items: start; padding-top: 6px; border-top: 1px solid var(--line); }
+}

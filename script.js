@@ -309,6 +309,11 @@ function createProductRow(product) {
 
   const quantity = Number(product.quantidade);
   const minimum = Number(product.minimo) || 0;
+  const badgeBox = document.createElement("div");
+  badgeBox.className = "stock-status";
+  const statusLabel = document.createElement("span");
+  statusLabel.className = "column-label";
+  statusLabel.textContent = "Situação";
   const badge = document.createElement("span");
   badge.className = "stock-badge";
   if (quantity === 0) {
@@ -323,10 +328,13 @@ function createProductRow(product) {
 
   const stockControls = document.createElement("div");
   stockControls.className = "stock-controls";
+  const quantityLabel = document.createElement("span");
+  quantityLabel.className = "column-label";
+  quantityLabel.textContent = "Quantidade";
   const quantityValue = document.createElement("span");
   quantityValue.className = "quantity-value";
   quantityValue.textContent = `${quantity} un.`;
-  stockControls.append(quantityValue);
+  stockControls.append(quantityLabel, quantityValue);
 
   const actions = document.createElement("div");
   actions.className = "product-actions";
@@ -365,7 +373,8 @@ function createProductRow(product) {
   recordActions.append(editButton, removeButton);
   actions.append(movementButtons, recordActions);
 
-  row.append(details, badge, stockControls, actions);
+  badgeBox.append(statusLabel, badge);
+  row.append(details, badgeBox, stockControls, actions);
   return row;
 }
 
@@ -454,20 +463,39 @@ function renderMovements() {
   list.replaceChildren(...filtered.map(movement => {
     const row = document.createElement("article");
     row.className = "movement-row";
+    const labels = { entrada: "Entrada", saida: "Saída", ajuste: "Ajuste" };
+
     const details = document.createElement("div");
     details.className = "movement-details";
     const title = document.createElement("strong");
-    const labels = { entrada: "Entrada", saida: "Saída", ajuste: "Ajuste" };
-    title.textContent = `${labels[movement.type]} · ${movement.productName}`;
+    title.textContent = movement.productName;
     const meta = document.createElement("span");
     const date = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(movement.createdAt));
     meta.textContent = movement.note ? `${date} · ${movement.note}` : date;
     details.append(title, meta);
+
+    const typeBox = document.createElement("div");
+    typeBox.className = "movement-type-box";
+    const typeLabel = document.createElement("span");
+    typeLabel.className = "column-label";
+    typeLabel.textContent = "Tipo";
+    const typeTag = document.createElement("span");
+    typeTag.className = `movement-amount ${movement.type}`;
+    typeTag.textContent = labels[movement.type];
+    typeBox.append(typeLabel, typeTag);
+
+    const quantityBox = document.createElement("div");
+    quantityBox.className = "movement-quantity-box";
+    const quantityLabel = document.createElement("span");
+    quantityLabel.className = "column-label";
+    quantityLabel.textContent = "Quantidade";
     const quantity = document.createElement("span");
-    quantity.className = `movement-amount ${movement.type}`;
+    quantity.className = "movement-quantity";
     const sign = movement.type === "entrada" ? "+" : movement.type === "saida" ? "−" : "±";
     quantity.textContent = `${sign}${movement.quantity} un.`;
-    row.append(details, quantity);
+    quantityBox.append(quantityLabel, quantity);
+
+    row.append(details, typeBox, quantityBox);
     return row;
   }));
   document.querySelector("#movement-count").textContent = movements.length;
@@ -797,9 +825,15 @@ function createSupplyRow(item) {
   meta.textContent = `Avisar quando chegar em ${formatSupplyAmount(minimum, item.unidade)}`;
   details.append(name, meta);
 
+  const amountBox = document.createElement("div");
+  amountBox.className = "supply-amount-box";
+  const amountLabel = document.createElement("span");
+  amountLabel.className = "column-label";
+  amountLabel.textContent = "Tem";
   const amount = document.createElement("span");
   amount.className = "supply-amount";
   amount.textContent = formatSupplyAmount(supplyStock(item), item.unidade);
+  amountBox.append(amountLabel, amount);
 
   const actions = document.createElement("div");
   actions.className = "product-actions";
@@ -832,7 +866,13 @@ function createSupplyRow(item) {
   recordActions.append(editButton, removeButton);
   actions.append(movementButtons, recordActions);
 
-  row.append(details, supplyBadge(item), amount, actions);
+  const statusBox = document.createElement("div");
+  statusBox.className = "stock-status";
+  const statusLabel = document.createElement("span");
+  statusLabel.className = "column-label";
+  statusLabel.textContent = "Situação";
+  statusBox.append(statusLabel, supplyBadge(item));
+  row.append(details, statusBox, amountBox, actions);
   return row;
 }
 

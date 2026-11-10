@@ -90,6 +90,7 @@
               <div class="section-heading"><h2>Lista de produtos <span class="count-pill" id="count-pill">0</span></h2></div>
               <label class="search-box" for="busca"><span aria-hidden="true">⌕</span><input id="busca" type="search" placeholder="Buscar produto" autocomplete="off"></label>
             </div>
+            <div class="list-header" aria-hidden="true"><span>Produto</span><span class="column-label">Situação</span><span class="column-label">Quantidade</span><span class="column-label">Ações</span></div>
             <div class="inventory-list" id="lista-produtos" aria-live="polite"></div>
             <div class="empty-state" id="empty-state"><span class="empty-illustration" aria-hidden="true">📦</span><h3>Seu estoque começa aqui</h3><p>Cadastre o primeiro produto para acompanhar seus itens.</p><a class="text-link" href="#cadastro" data-view-link>Cadastrar produto <span aria-hidden="true">→</span></a></div>
           </section>
@@ -104,6 +105,7 @@
           </section>
           <section class="panel movement-panel" aria-labelledby="movement-history-title">
             <div class="movement-heading"><div><h2 id="movement-history-title">Histórico de movimentações <span class="count-pill" id="movement-count">0</span></h2></div><div class="movement-filters"><label class="history-filter-label" for="movement-filter">Tipo<select class="history-filter" id="movement-filter"><option value="todas">Todos</option><option value="entrada">Entradas</option><option value="saida">Saídas</option><option value="ajuste">Ajustes</option></select></label><label class="history-filter-label" for="movement-product-filter">Produto<select class="history-filter" id="movement-product-filter"><option value="todos">Todos</option></select></label><label class="history-filter-label" for="movement-period-filter">Data<select class="history-filter" id="movement-period-filter"><option value="todos">Todo o período</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="mes">Mês atual</option></select></label></div></div>
+            <div class="list-header movement-columns" aria-hidden="true"><span>Produto</span><span class="column-label">Tipo</span><span class="column-label">Quantidade</span></div>
             <div class="movement-list" id="movement-list" aria-live="polite"></div>
             <div class="movement-empty" id="movement-empty"><span aria-hidden="true">↕</span><div><strong>Nenhuma movimentação ainda</strong><p>Quando você registrar uma entrada ou saída, ela aparecerá aqui.</p></div></div>
             <p class="history-note" id="movement-summary">O histórico começa a ser registrado a partir de agora.</p>
@@ -119,6 +121,7 @@
               <div class="section-heading"><h2>Lista de insumos <span class="count-pill" id="supply-count-pill">0</span></h2></div>
               <label class="search-box" for="busca-insumos"><span aria-hidden="true">⌕</span><input id="busca-insumos" type="search" placeholder="Buscar insumo" autocomplete="off"></label>
             </div>
+            <div class="list-header" aria-hidden="true"><span>Insumo</span><span class="column-label">Situação</span><span class="column-label">Tem</span><span class="column-label">Ações</span></div>
             <div class="inventory-list" id="lista-insumos" aria-live="polite"></div>
             <div class="empty-state" id="supply-empty-state"><span class="empty-illustration" aria-hidden="true">🧺</span><h3>Nenhum insumo cadastrado</h3><p>Cadastre o que você compra para fazer os espetinhos.</p><button class="primary-button" id="new-supply" type="button">＋ Cadastrar insumo</button></div>
             <div class="supply-footer"><button class="secondary-button" id="new-supply-footer" type="button">＋ Cadastrar insumo</button></div>
