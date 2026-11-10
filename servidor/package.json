@@ -6,5 +6,8 @@
   "scripts": {
     "start": "node servidor.js",
     "test": "node --test"
+  },
+  "devDependencies": {
+    "pg-mem": "^3.0.0"
   }
 }

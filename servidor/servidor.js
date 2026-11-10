@@ -154,7 +154,10 @@ function normalizeState(input) {
 
 async function readFileState(dataFile) {
   try {
-    return normalizeState(JSON.parse(await fs.readFile(dataFile, "utf8")));
+    const saved = JSON.parse(await fs.readFile(dataFile, "utf8"));
+    const normalized = normalizeState(saved);
+    if (Array.isArray(saved.supplies) || Array.isArray(saved.supplyMovements)) return normalized;
+    return { ...normalized, supplies: [], supplyMovements: [] };
   } catch (error) {
     if (error.code === "ENOENT") return { products: [], movements: [], supplies: [], supplyMovements: [] };
     throw error;
@@ -229,9 +232,11 @@ async function initializePostgres(pool) {
 }
 
 async function readPostgresState(pool) {
-  const [productsResult, movementsResult] = await Promise.all([
+  const [productsResult, movementsResult, suppliesResult, supplyMovementsResult] = await Promise.all([
     pool.query("SELECT id, name, price, quantity, minimum FROM inventory_products ORDER BY name, id"),
-    pool.query("SELECT id, product_id, product_name, type, quantity, created_at, note FROM inventory_movements ORDER BY created_at DESC, id")
+    pool.query("SELECT id, product_id, product_name, type, quantity, created_at, note FROM inventory_movements ORDER BY created_at DESC, id"),
+    pool.query("SELECT id, name, unit, minimum FROM supply_items ORDER BY name, id"),
+    pool.query("SELECT id, supply_id, supply_name, type, quantity, unit, created_at, note FROM supply_movements ORDER BY created_at DESC, id")
   ]);
   return normalizeState({
     products: productsResult.rows.map(row => ({
