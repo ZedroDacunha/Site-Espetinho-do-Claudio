@@ -339,6 +339,40 @@ function canMutate() {
   return false;
 }
 
+/* ---------- Confirmações ---------- */
+const confirmDialog = document.querySelector("#confirm-dialog");
+
+function askConfirmation({ title = "Confirmar", message, confirmLabel = "Confirmar", danger = false, extra = "" }) {
+  document.querySelector("#confirm-title").textContent = title;
+  const messageBox = document.querySelector("#confirm-message");
+  messageBox.replaceChildren();
+  const text = document.createElement("span");
+  text.textContent = message;
+  messageBox.append(text);
+  if (extra) {
+    const note = document.createElement("p");
+    note.className = "confirm-extra";
+    note.textContent = extra;
+    messageBox.append(note);
+  }
+  const okButton = document.querySelector("#confirm-ok");
+  okButton.textContent = confirmLabel;
+  okButton.classList.toggle("danger", danger);
+  return new Promise(resolve => {
+    let answered = false;
+    const answer = value => { if (answered) return; answered = true; resolve(value); };
+    const onOk = () => { answer(true); confirmDialog.close(); };
+    const onCancel = () => { answer(false); confirmDialog.close(); };
+    const onClose = () => answer(false);
+    okButton.addEventListener("click", onOk, { once: true });
+    document.querySelector("#cancel-confirm").addEventListener("click", onCancel, { once: true });
+    document.querySelector("#close-confirm").addEventListener("click", onCancel, { once: true });
+    confirmDialog.addEventListener("close", onClose, { once: true });
+    confirmDialog.showModal();
+    okButton.focus();
+  });
+}
+
 function formatMoney(value) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
@@ -734,6 +768,15 @@ async function removeProduct(id) {
   if (!canMutate()) return;
   const product = products.find(item => item.id === id);
   if (!product) return;
+  const confirmed = await askConfirmation({
+    title: "Excluir produto?",
+    message: `Excluir “${product.nome}” do estoque?`,
+    extra: "O histórico de entradas e saídas continua guardado.",
+    confirmLabel: "Sim, excluir",
+    danger: true
+  });
+  if (!confirmed) return;
+  if (!canMutate()) return;
   const previousProducts = products;
   products = products.filter(item => item.id !== id);
   if (await saveProducts()) {
@@ -914,6 +957,16 @@ movementForm.addEventListener("submit", async event => {
     movementQuantityInput.addEventListener("input", () => movementQuantityInput.setCustomValidity(""), { once: true });
     return;
   }
+  const current = Number(product.quantidade);
+  const next = type === "entrada" ? current + amount : current - amount;
+  const confirmed = await askConfirmation({
+    title: type === "entrada" ? "Confirmar entrada?" : "Confirmar saída?",
+    message: `${type === "entrada" ? "Entrada" : "Saída"} de ${amount} un. em “${product.nome}”.`,
+    extra: `O estoque vai de ${current} para ${next} un.`,
+    confirmLabel: type === "entrada" ? "Sim, dar entrada" : "Sim, dar saída"
+  });
+  if (!confirmed) return;
+  if (!canMutate()) return;
   const previousQuantity = product.quantidade;
   const previousMovements = movements;
   product.quantidade = Number(product.quantidade) + (type === "entrada" ? amount : -amount);
@@ -924,7 +977,7 @@ movementForm.addEventListener("submit", async event => {
     movements = previousMovements;
     return;
   }
-  movementDialog.close();
+  if (movementDialog.open) movementDialog.close();
   renderProducts();
   showStatus(`${type === "entrada" ? "Entrada" : "Saída"} de ${amount} un. salva em ${product.nome}.${backupReminder()}`);
 });
@@ -1136,7 +1189,15 @@ supplyForm.addEventListener("submit", async event => {
 
 async function removeSupply(item) {
   if (!canMutate()) return;
-  if (!window.confirm(`Excluir ${item.nome}? O histórico de movimentações dele continua guardado.`)) return;
+  const confirmed = await askConfirmation({
+    title: "Excluir insumo?",
+    message: `Excluir “${item.nome}” da lista de insumos?`,
+    extra: "O histórico de movimentações continua guardado.",
+    confirmLabel: "Sim, excluir",
+    danger: true
+  });
+  if (!confirmed) return;
+  if (!canMutate()) return;
   const previousSupplies = supplies;
   supplies = supplies.filter(entry => String(entry.id) !== String(item.id));
   if (!await saveInventory()) { supplies = previousSupplies; return; }
@@ -1207,6 +1268,16 @@ supplyMovementForm.addEventListener("submit", async event => {
     showStatus("A saída é maior do que o estoque deste insumo.", true);
     return;
   }
+  const stockNow = supplyStock(item);
+  const stockNext = type === "entrada" ? stockNow + amount : stockNow - amount;
+  const confirmed = await askConfirmation({
+    title: type === "entrada" ? "Confirmar entrada?" : "Confirmar saída?",
+    message: `${type === "entrada" ? "Entrada" : "Saída"} de ${formatSupplyAmount(amount, item.unidade)} em “${item.nome}”.`,
+    extra: `O estoque vai de ${formatSupplyAmount(stockNow, item.unidade)} para ${formatSupplyAmount(Math.max(0, stockNext), item.unidade)}.`,
+    confirmLabel: type === "entrada" ? "Sim, dar entrada" : "Sim, dar saída"
+  });
+  if (!confirmed) return;
+  if (!canMutate()) return;
   const note = document.querySelector("#supply-movement-note").value.trim();
   const previousMovements = supplyMovements;
   supplyMovements = [{
@@ -1223,7 +1294,7 @@ supplyMovementForm.addEventListener("submit", async event => {
     supplyMovements = previousMovements;
     return;
   }
-  supplyMovementDialog.close();
+  if (supplyMovementDialog.open) supplyMovementDialog.close();
   renderSupplies();
   showStatus(`${type === "entrada" ? "Entrada" : "Saída"} de ${formatSupplyAmount(amount, item.unidade)} salva em ${item.nome}.${backupReminder()}`);
 });
@@ -1347,7 +1418,14 @@ backupFileInput.addEventListener("change", async () => {
       createdAt: movement.createdAt,
       note: typeof movement.note === "string" ? movement.note : ""
     })).sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
-    if (!window.confirm(`Este arquivo tem ${imported.length} produto(s) e ${importedMovements.length} movimentação(ões). A importação vai substituir o estoque e o histórico atuais. Deseja continuar?`)) return;
+    const confirmed = await askConfirmation({
+      title: "Restaurar backup?",
+      message: `O arquivo tem ${imported.length} produto(s) e ${importedMovements.length} movimentação(ões).`,
+      extra: "A importação substitui o estoque e o histórico atuais. Faça um backup antes, se precisar.",
+      confirmLabel: "Sim, restaurar",
+      danger: true
+    });
+    if (!confirmed) return;
     if (!canMutate()) return;
     const previousProducts = products;
     const previousMovements = movements;
@@ -1483,7 +1561,15 @@ logoutButton.addEventListener("click", async () => {
     showStatus("Aguarde salvar antes de sair.", true);
     return;
   }
-  if (products.length && !lastBackupDate() && !window.confirm("Você ainda não baixou nenhum backup neste navegador. Sair agora não apaga os dados salvos no servidor. Deseja sair mesmo assim?")) return;
+  if (products.length && !lastBackupDate()) {
+    const confirmed = await askConfirmation({
+      title: "Sair do estoque?",
+      message: "Você ainda não baixou nenhum backup neste navegador.",
+      extra: "Sair não apaga os dados salvos no servidor.",
+      confirmLabel: "Sim, sair"
+    });
+    if (!confirmed) return;
+  }
   logoutButton.disabled = true;
   try {
     const response = await fetch("/api/auth/logout", { method: "POST" });
