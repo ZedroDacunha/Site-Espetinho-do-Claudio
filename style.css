@@ -832,3 +832,29 @@ html { scroll-behavior: smooth; }
 
 /* Toque: remove o realce azul padrão do celular nas listas */
 .product-row, .movement-trigger, .nav-link, .keypad button, .quick-amounts button { -webkit-tap-highlight-color: transparent; }
+
+/* ---------- Formulários: respiro entre rótulo, campo e próximo grupo ---------- */
+/* Cada campo vira um bloco com espaçamento próprio, evitando rótulos colados na caixa de cima */
+form > label,
+.edit-dialog form > label,
+.movement-dialog form > label { margin-top: var(--space-md); }
+form > label:first-of-type { margin-top: 0; }
+.field-group { display: grid; gap: var(--space-xs); align-content: start; }
+.field-group > label { margin-bottom: 0; }
+.form-row { align-items: start; gap: var(--space-md); margin-top: var(--space-md); margin-bottom: var(--space-md); }
+.form-row:first-of-type { margin-top: 0; }
+
+/* Rótulos sempre com o mesmo respiro abaixo, inclusive quando o campo é um select */
+.edit-dialog label, .movement-dialog label, form label { line-height: 1.4; margin-bottom: var(--space-xs); }
+.edit-dialog .field-group label, .movement-dialog .field-group label { margin-bottom: 0; }
+
+/* O select de medida acompanha a altura e o alinhamento do campo vizinho */
+.supply-unit-select { height: 44px; margin: 0; display: block; }
+
+/* Espaçamento entre o último campo e os botões dos diálogos */
+.edit-dialog .dialog-actions { margin-top: var(--space-lg); }
+
+/* No modo simples, mais respiro entre os campos */
+.simple-mode form > label, .simple-mode .edit-dialog form > label, .simple-mode .movement-dialog form > label { margin-top: var(--space-lg); }
+.simple-mode form > label:first-of-type { margin-top: 0; }
+.simple-mode .form-row { gap: var(--space-lg); }
