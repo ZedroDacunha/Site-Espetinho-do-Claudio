@@ -896,3 +896,15 @@ form > label:first-of-type { margin-top: 0; }
   .photo-picker { align-items: flex-start; }
   .photo-actions small { max-width: none; }
 }
+
+/* Diálogo de confirmação de exclusão */
+.confirm-dialog { width: min(420px, calc(100vw - 28px)); max-width: 420px; }
+.confirm-dialog .section-heading { margin-bottom: var(--space-md); }
+.confirm-message { margin: 0 0 var(--space-lg); color: var(--muted); font-size: var(--text-md); line-height: 1.6; }
+.confirm-message strong { color: var(--text); }
+.confirm-dialog .dialog-actions { gap: var(--space-sm); }
+.confirm-dialog .dialog-actions .primary-button { min-width: 0; flex: 1; }
+.confirm-dialog .dialog-actions .cancel-button { flex: 1; }
+.primary-button.danger { background: var(--red); }
+.primary-button.danger:hover { background: color-mix(in srgb, var(--red) 85%, #000); }
+.primary-button.danger:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 25%, transparent); }

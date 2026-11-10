@@ -214,6 +214,12 @@
         <div class="dialog-actions"><button class="cancel-button" id="cancel-movement" type="button">Cancelar</button><button class="primary-button" id="movement-submit" type="submit">Confirmar entrada</button></div>
       </form>
     </dialog>
+    <dialog class="edit-dialog confirm-dialog" id="confirm-dialog" aria-labelledby="confirm-title">
+      <div class="section-heading"><div><h2 id="confirm-title">Confirmar</h2></div><button class="dialog-close" id="close-confirm" type="button" aria-label="Fechar">×</button></div>
+      <p class="confirm-message" id="confirm-message"></p>
+      <div class="dialog-actions"><button class="cancel-button" id="cancel-confirm" type="button">Cancelar</button><button class="primary-button danger" id="confirm-ok" type="button">Excluir</button></div>
+    </dialog>
+
     <dialog class="edit-dialog" id="supply-dialog" aria-labelledby="supply-dialog-title">
       <form id="supply-form">
         <div class="section-heading"><div><h2 id="supply-dialog-title">Cadastrar insumo</h2></div><button class="dialog-close" id="close-supply" type="button" aria-label="Fechar">×</button></div>
