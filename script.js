@@ -3,16 +3,12 @@ const MOVEMENTS_KEY = "espetinhos-claudio-movimentacoes-v1";
 const THEME_KEY = "espetinhos-claudio-tema";
 const BACKUP_KEY = "espetinhos-claudio-ultimo-backup";
 
-const SORT_OPTIONS = new Set(["nome", "menor-quantidade", "reposicao", "maior-valor", "recentes"]);
-
 const form = document.querySelector("#form-produto");
 const nomeInput = document.querySelector("#nome");
 const precoInput = document.querySelector("#preco");
 const quantidadeInput = document.querySelector("#quantidade");
 const minimoInput = document.querySelector("#minimo");
 const searchInput = document.querySelector("#busca");
-const sortSelect = document.querySelector("#ordenar-produtos");
-const lowOnlyToggle = document.querySelector("#somente-reposicao");
 const productList = document.querySelector("#lista-produtos");
 const emptyState = document.querySelector("#empty-state");
 const statusMessage = document.querySelector("#status-message");
@@ -145,7 +141,7 @@ function saveInventory() {
 
 function canMutate() {
   if (serverAvailable && !isSaving) return true;
-  showStatus(serverAvailable ? "Aguarde o salvamento terminar." : "Sem conexão com o servidor: o estoque está somente para consulta.", true);
+  showStatus(serverAvailable ? "Aguarde o salvamento terminar." : "Sem conexão com o servidor. Recarregue a página.", true);
   return false;
 }
 
@@ -164,8 +160,10 @@ function updateSummary() {
   const totalUnits = products.reduce((total, product) => total + Number(product.quantidade), 0);
   const stockValue = products.reduce((total, product) => total + Number(product.preco) * Number(product.quantidade), 0);
   document.querySelector("#stat-products").textContent = products.length;
-  document.querySelector("#stat-units").textContent = totalUnits;
-  document.querySelector("#stat-value").textContent = formatMoney(stockValue);
+  const unitsStat = document.querySelector("#stat-units");
+  if (unitsStat) unitsStat.textContent = totalUnits;
+  const valueStat = document.querySelector("#stat-value");
+  if (valueStat) valueStat.textContent = formatMoney(stockValue);
   document.querySelector("#count-pill").textContent = products.length;
   document.querySelector("#nav-product-count").textContent = products.length;
 
@@ -302,36 +300,15 @@ function needsRestock(product) {
   return Number(product.quantidade) <= (Number(product.minimo) || 0);
 }
 
-function sortProducts(list, criterion) {
-  const sorted = [...list];
-  switch (criterion) {
-    case "menor-quantidade":
-      sorted.sort((a, b) => Number(a.quantidade) - Number(b.quantidade) || a.nome.localeCompare(b.nome, "pt-BR"));
-      break;
-    case "reposicao":
-      sorted.sort((a, b) => Number(needsRestock(b)) - Number(needsRestock(a))
-        || Number(a.quantidade) - Number(b.quantidade)
-        || a.nome.localeCompare(b.nome, "pt-BR"));
-      break;
-    case "maior-valor":
-      sorted.sort((a, b) => Number(b.preco) * Number(b.quantidade) - Number(a.preco) * Number(a.quantidade)
-        || a.nome.localeCompare(b.nome, "pt-BR"));
-      break;
-    case "recentes":
-      sorted.reverse();
-      break;
-    default:
-      sorted.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-  }
-  return sorted;
+function sortProducts(list) {
+  return [...list].sort((a, b) => Number(needsRestock(b)) - Number(needsRestock(a))
+    || a.nome.localeCompare(b.nome, "pt-BR"));
 }
 
 function renderProducts() {
   const query = searchInput.value.trim().toLocaleLowerCase("pt-BR");
-  const criterion = SORT_OPTIONS.has(sortSelect.value) ? sortSelect.value : "nome";
-  let filtered = products.filter(product => product.nome.toLocaleLowerCase("pt-BR").includes(query));
-  if (lowOnlyToggle.checked) filtered = filtered.filter(needsRestock);
-  const visible = sortProducts(filtered, criterion);
+  const filtered = products.filter(product => product.nome.toLocaleLowerCase("pt-BR").includes(query));
+  const visible = sortProducts(filtered);
   productList.replaceChildren(...visible.map(createProductRow));
   productList.classList.add("product-list");
   emptyState.hidden = products.length > 0;
@@ -343,9 +320,7 @@ function renderProducts() {
       noResults.className = "empty-state";
       productList.after(noResults);
     }
-    noResults.textContent = lowOnlyToggle.checked && !query
-      ? "Nenhum produto precisa de reposição agora."
-      : "Nenhum produto encontrado com esse filtro.";
+    noResults.textContent = "Nenhum produto encontrado com esse nome.";
     noResults.hidden = false;
   } else if (noResults) {
     noResults.hidden = true;
@@ -517,7 +492,7 @@ async function removeProduct(id) {
   products = products.filter(item => item.id !== id);
   if (await saveProducts()) {
     renderProducts();
-    showStatus(`${product.nome} foi excluído do estoque.${backupReminder()}`);
+    showStatus(`${product.nome} foi excluído.${backupReminder()}`);
   } else {
     products = previousProducts;
   }
@@ -543,7 +518,7 @@ form.addEventListener("submit", async event => {
     form.reset();
     searchInput.value = "";
     nomeInput.focus();
-    showStatus(`${product.nome} foi adicionado ao estoque.${backupReminder()}`);
+    showStatus(`${product.nome} cadastrado.${backupReminder()}`);
   } else {
     products = previousProducts;
     movements = previousMovements;
@@ -594,12 +569,31 @@ editForm.addEventListener("submit", async event => {
   }
   editDialog.close();
   renderProducts();
-  showStatus(quantityDifference === 0 ? `${product.nome} foi atualizado.` : `${product.nome} foi atualizado e o ajuste entrou no histórico.`);
+  showStatus(quantityDifference === 0 ? `${product.nome} atualizado.` : `${product.nome} atualizado e o ajuste entrou no histórico.`);
 });
 
 const movementDialog = document.querySelector("#movement-dialog");
 const movementForm = document.querySelector("#movement-form");
 const movementQuantityInput = document.querySelector("#movement-quantity");
+const movementAmountPreview = document.querySelector("#movement-amount-preview");
+
+function updateMovementPreview() {
+  const productId = document.querySelector("#movement-product-id").value;
+  const type = document.querySelector("#movement-type").value;
+  const product = products.find(item => String(item.id) === productId);
+  const amount = Number(movementQuantityInput.value);
+  if (!product) return;
+  const current = Number(product.quantidade);
+  const next = Number.isInteger(amount) && amount > 0
+    ? (type === "entrada" ? current + amount : current - amount)
+    : current;
+  movementAmountPreview.textContent = next < 0
+    ? "Quantidade maior que o estoque disponível."
+    : `Depois de salvar: ${current} → ${Math.max(0, next)} un.`;
+  movementAmountPreview.classList.toggle("invalid", next < 0);
+}
+
+movementQuantityInput.addEventListener("input", updateMovementPreview);
 function openMovementDialog(product, type) {
   document.querySelector("#movement-product-id").value = product.id;
   document.querySelector("#movement-type").value = type;
@@ -610,9 +604,17 @@ function openMovementDialog(product, type) {
   if (type === "saida") movementQuantityInput.max = product.quantidade;
   else movementQuantityInput.removeAttribute("max");
   document.querySelector("#movement-note").value = "";
+  updateMovementPreview();
   movementDialog.showModal();
   movementQuantityInput.focus();
 }
+
+document.querySelectorAll("[data-quick-amount]").forEach(button => button.addEventListener("click", () => {
+  const amount = Number(button.dataset.quickAmount);
+  const current = Number(movementQuantityInput.value) || 0;
+  movementQuantityInput.value = String(current + amount);
+  movementQuantityInput.dispatchEvent(new Event("input"));
+}));
 
 document.querySelector("#cancel-movement").addEventListener("click", () => movementDialog.close());
 document.querySelector("#close-movement").addEventListener("click", () => movementDialog.close());
@@ -642,7 +644,7 @@ movementForm.addEventListener("submit", async event => {
   }
   movementDialog.close();
   renderProducts();
-  showStatus(`${type === "entrada" ? "Entrada" : "Saída"} de ${amount} unidade(s) registrada para ${product.nome}.${backupReminder()}`);
+  showStatus(`${type === "entrada" ? "Entrada" : "Saída"} de ${amount} un. salva em ${product.nome}.${backupReminder()}`);
 });
 
 const backupFileInput = document.querySelector("#backup-file");
@@ -770,8 +772,7 @@ function makeMovement(product, type, quantity, note = "") {
 }
 
 searchInput.addEventListener("input", renderProducts);
-sortSelect.addEventListener("change", renderProducts);
-lowOnlyToggle.addEventListener("change", renderProducts);
+
 
 const validViews = new Set(["inicio", "estoque", "importacoes", "cadastro"]);
 function activateView(viewName) {
@@ -804,9 +805,6 @@ document.querySelector("#menu-toggle").addEventListener("click", () => {
   document.querySelector("#menu-toggle").setAttribute("aria-label", isOpen ? "Fechar menu" : "Abrir menu");
 });
 document.querySelector("#nav-overlay").addEventListener("click", closeMobileMenu);
-
-const isMacPlatform = /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent || "");
-document.querySelector("kbd").textContent = isMacPlatform ? "⌘ K" : "Ctrl K";
 
 document.addEventListener("keydown", event => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
@@ -863,7 +861,7 @@ loginForm.addEventListener("submit", async event => {
 
 logoutButton.addEventListener("click", async () => {
   if (isSaving) {
-    showStatus("Aguarde o salvamento terminar antes de sair.", true);
+    showStatus("Aguarde salvar antes de sair.", true);
     return;
   }
   if (products.length && !lastBackupDate() && !window.confirm("Você ainda não baixou nenhum backup neste navegador. Sair agora não apaga os dados salvos no servidor. Deseja sair mesmo assim?")) return;
