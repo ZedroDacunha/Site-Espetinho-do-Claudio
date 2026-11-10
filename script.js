@@ -463,20 +463,39 @@ function renderMovements() {
   list.replaceChildren(...filtered.map(movement => {
     const row = document.createElement("article");
     row.className = "movement-row";
+    const labels = { entrada: "Entrada", saida: "Saída", ajuste: "Ajuste" };
+
     const details = document.createElement("div");
     details.className = "movement-details";
     const title = document.createElement("strong");
-    const labels = { entrada: "Entrada", saida: "Saída", ajuste: "Ajuste" };
-    title.textContent = `${labels[movement.type]} · ${movement.productName}`;
+    title.textContent = movement.productName;
     const meta = document.createElement("span");
     const date = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(movement.createdAt));
     meta.textContent = movement.note ? `${date} · ${movement.note}` : date;
     details.append(title, meta);
+
+    const typeBox = document.createElement("div");
+    typeBox.className = "movement-type-box";
+    const typeLabel = document.createElement("span");
+    typeLabel.className = "column-label";
+    typeLabel.textContent = "Tipo";
+    const typeTag = document.createElement("span");
+    typeTag.className = `movement-amount ${movement.type}`;
+    typeTag.textContent = labels[movement.type];
+    typeBox.append(typeLabel, typeTag);
+
+    const quantityBox = document.createElement("div");
+    quantityBox.className = "movement-quantity-box";
+    const quantityLabel = document.createElement("span");
+    quantityLabel.className = "column-label";
+    quantityLabel.textContent = "Quantidade";
     const quantity = document.createElement("span");
-    quantity.className = `movement-amount ${movement.type}`;
+    quantity.className = "movement-quantity";
     const sign = movement.type === "entrada" ? "+" : movement.type === "saida" ? "−" : "±";
     quantity.textContent = `${sign}${movement.quantity} un.`;
-    row.append(details, quantity);
+    quantityBox.append(quantityLabel, quantity);
+
+    row.append(details, typeBox, quantityBox);
     return row;
   }));
   document.querySelector("#movement-count").textContent = movements.length;

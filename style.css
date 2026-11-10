@@ -708,3 +708,27 @@ form input, .edit-dialog input, .movement-dialog input, .supply-unit-select { he
 /* Tabela de histórico também alinhada à direita na coluna de quantidade */
 .movement-row { align-items: center; }
 .movement-amount { min-width: 72px; text-align: right; }
+
+/* ---------- Histórico em colunas, igual às demais listas ---------- */
+.movement-columns,
+.movement-row { display: grid; grid-template-columns: minmax(150px, 1fr) 110px 96px; align-items: center; gap: 17px; }
+.movement-columns { padding: 0 2px 8px; }
+.movement-row { min-height: 58px; padding: 10px 2px; border-top: 1px solid var(--line); justify-content: normal; }
+.movement-type-box, .movement-quantity-box { display: grid; gap: 4px; justify-items: end; }
+.movement-amount { border-radius: 20px; padding: 5px 10px; font-size: var(--text-sm); font-weight: 700; }
+.movement-quantity { font-size: var(--text-md); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.movement-amount.entrada { background: var(--green-soft); color: var(--green); }
+.movement-amount.saida { background: var(--red-soft); color: var(--red); }
+.movement-amount.ajuste { background: var(--yellow-soft); color: var(--yellow); }
+
+@media (max-width: 1100px) {
+  .movement-columns { display: none; }
+  .movement-row .column-label { display: block; }
+  .movement-type-box, .movement-quantity-box { justify-items: start; }
+  .movement-quantity { text-align: left; }
+}
+@media (max-width: 650px) {
+  .movement-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .movement-type-box { justify-items: start; }
+  .movement-quantity-box { grid-column: 1 / -1; grid-template-columns: auto auto; align-items: center; justify-content: space-between; justify-items: start; padding-top: 6px; border-top: 1px solid var(--line); }
+}
