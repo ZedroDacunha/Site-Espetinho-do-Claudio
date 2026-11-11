@@ -13,7 +13,8 @@ const SUPPLY_UNITS = ["kg", "g", "un", "pacote", "litro"];
 const MAX_STOCK_UNITS = 2147483647;
 const MAX_PRICE = 999999999999.99;
 const SESSION_COOKIE = "espetinhos_session";
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;      // sessão normal: 7 dias
+const SESSION_REMEMBER_MAX_AGE_SECONDS = 60 * 60 * 24 * 180; // "lembrar deste aparelho": 180 dias
 
 function asId(value, fieldName) {
   const id = String(value ?? "").trim();
@@ -421,8 +422,8 @@ async function writePostgresState(pool, previousState, nextState, expectedRevisi
   }
 }
 
-function makeSessionToken(secret) {
-  const payload = Buffer.from(JSON.stringify({ expiresAt: Date.now() + SESSION_MAX_AGE_SECONDS * 1000 })).toString("base64url");
+function makeSessionToken(secret, maxAgeSeconds = SESSION_MAX_AGE_SECONDS) {
+  const payload = Buffer.from(JSON.stringify({ expiresAt: Date.now() + maxAgeSeconds * 1000 })).toString("base64url");
   const signature = crypto.createHmac("sha256", secret).update(payload).digest("base64url");
   return `${payload}.${signature}`;
 }
@@ -557,8 +558,11 @@ function createApp({
       return res.status(401).json({ error: "Senha incorreta." });
     }
     loginAttempts.delete(ip);
-    appendCookie(res, makeSessionToken(secret), { production });
-    res.set("Cache-Control", "no-store").json({ authenticated: true });
+    // "Lembrar deste aparelho" mantém a sessão por mais tempo (cookie que sobrevive ao fechar o navegador).
+    const remember = Boolean(req.body?.remember);
+    const maxAge = remember ? SESSION_REMEMBER_MAX_AGE_SECONDS : SESSION_MAX_AGE_SECONDS;
+    appendCookie(res, makeSessionToken(secret, maxAge), { production, maxAge });
+    res.set("Cache-Control", "no-store").json({ authenticated: true, remember });
   });
   app.post("/api/auth/logout", (req, res) => {
     appendCookie(res, "", { production, maxAge: 0 });
@@ -655,6 +659,8 @@ function createApp({
   app.get("/index.html", (req, res) => res.sendFile(path.join(ROOT_DIR, "index.html")));
   app.get("/style.css", (req, res) => res.sendFile(path.join(ROOT_DIR, "style.css")));
   app.get("/script.js", (req, res) => res.sendFile(path.join(ROOT_DIR, "script.js")));
+  // Logo e ícones do site (favicon, logo do login e marca do topo)
+  app.use("/assets", express.static(path.join(ROOT_DIR, "assets"), { maxAge: "7d", index: false }));
   app.use("/api", (req, res) => res.status(404).json({ error: "Endpoint não encontrado." }));
   app.use((req, res) => res.status(404).send("Página não encontrada."));
   app.use((error, req, res, next) => {

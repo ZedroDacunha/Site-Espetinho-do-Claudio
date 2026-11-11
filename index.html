@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#f7f5f0">
   <meta name="description" content="Controle simples de estoque dos Espetinhos do Claudio.">
   <title>Estoque | Espetinhos do Claudio</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -15,12 +17,16 @@
 <body>
   <section class="login-screen" id="login-screen" aria-labelledby="login-title" hidden>
     <div class="login-card">
-      <span class="brand-mark login-mark" aria-hidden="true">🔥</span>
+      <img class="login-logo" src="assets/logo.png" alt="Logo dos Espetinhos do Claudio" width="260" height="209">
       <h1 id="login-title">Acesso ao estoque</h1>
       <p class="login-description">Digite a senha compartilhada para abrir o painel.</p>
       <form id="login-form">
         <label for="access-password">Senha de acesso</label>
         <input id="access-password" type="password" autocomplete="current-password" required>
+        <label class="remember-device" for="remember-device">
+          <input id="remember-device" type="checkbox">
+          <span class="remember-device-text"><strong>Lembrar deste aparelho</strong><small>Não pede a senha de novo neste celular ou computador</small></span>
+        </label>
         <p class="login-error" id="login-error" role="alert"></p>
         <button class="primary-button" id="login-submit" type="submit">Entrar no estoque</button>
       </form>
@@ -31,7 +37,7 @@
     <header class="topbar">
       <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar"><span></span><span></span><span></span></button>
       <a class="brand" href="#inicio" aria-label="Espetinhos do Claudio, início" data-view-link>
-        <span class="brand-mark" aria-hidden="true">🔥</span>
+        <img class="brand-mark" src="assets/logo-mark.png" alt="" width="38" height="38" aria-hidden="true">
         <span class="brand-name">Espetinhos <span>do Claudio</span></span>
       </a>
       <button class="theme-toggle calc-toggle" id="calculator-toggle" type="button" aria-label="Abrir calculadora">
