@@ -1636,3 +1636,41 @@ img.brand-mark {
   .main-content .product-row .product-actions,
   .main-content .supply-row .product-actions { justify-self: end; }
 }
+
+/* ============================================================
+   Todas as colunas das listas centralizadas, como a quantidade
+   Situação, Quantidade e Ações ficam no centro de suas colunas,
+   com o cabeçalho em cima do conteúdo.
+   ============================================================ */
+@media (min-width: 851px) {
+  /* cabeçalho: só o nome do item fica à esquerda */
+  .main-content .list-header .column-label,
+  .main-content .list-header .column-label:nth-child(2),
+  .main-content .list-header .column-label:nth-child(3),
+  .main-content .list-header .column-label:nth-child(4) { text-align: center; }
+
+  /* situação: selo no centro da coluna */
+  .main-content .product-row .stock-status,
+  .main-content .supply-row .stock-status { justify-self: center; justify-items: center; align-items: center; width: 100%; }
+  .main-content .product-row .stock-status .stock-badge,
+  .main-content .supply-row .stock-status .stock-badge { margin: 0 auto; max-width: 100%; text-align: center; }
+
+  /* quantidade (produtos) e "Tem" (insumos): já centrados; reforço da largura */
+  .main-content .product-row .stock-controls,
+  .main-content .supply-row .supply-amount-box { justify-self: center; justify-items: center; align-items: center; width: 100%; }
+  .main-content .product-row .quantity-value,
+  .main-content .supply-row .supply-amount { text-align: center; width: 100%; }
+
+  /* ações: botões no centro da coluna, mantendo a ordem e o tamanho */
+  .main-content .product-row .product-actions,
+  .main-content .supply-row .product-actions { justify-self: center; justify-content: center; width: 100%; gap: var(--space-sm); }
+  .main-content .product-row .record-actions,
+  .main-content .supply-row .record-actions { margin-left: var(--space-sm); }
+
+  /* histórico: tipo e quantidade também centrados, casando com o cabeçalho */
+  .movement-columns .column-label,
+  .movement-columns .column-label:last-child { text-align: center; }
+  .movement-row .movement-type-box { justify-items: center; justify-self: center; }
+  .movement-row .movement-quantity-box { justify-items: center; justify-self: center; }
+  .movement-row .movement-quantity { text-align: center; }
+}
