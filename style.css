@@ -1415,9 +1415,6 @@ img.brand-mark {
 
 /* ============================================================
    Relatórios e histórico: alinhamento e respiro
-   - Nada encostado nas bordas do bloco.
-   - Cabeçalho de colunas alinhado com o conteúdo das linhas.
-   - Ações do produto na ordem: Situação · Quantidade · Entrada/Saída · Editar/Excluir.
    ============================================================ */
 
 /* Bloco recolhível com folga interna igual nas duas colunas */
@@ -1428,8 +1425,8 @@ img.brand-mark {
 
 /* Cabeçalho de cada painel (título + filtro) alinhado pela base do título */
 .report-panel .movement-heading,
-.movement-panel .movement-heading { align-items: flex-end; gap: var(--space-md); margin-bottom: var(--space-md); }
-.movement-heading h2 { line-height: 1.25; }
+.movement-panel .movement-heading { align-items: flex-end; gap: var(--space-md); margin-bottom: var(--space-md); flex-wrap: wrap; }
+.movement-heading h2 { line-height: 1.25; font-size: var(--title-section); }
 .history-filter-label { gap: var(--space-xs); }
 .history-filter { min-height: 36px; padding: 0 10px; font-size: var(--text-base); }
 
@@ -1437,69 +1434,49 @@ img.brand-mark {
 .movement-panel .movement-filters { align-items: flex-end; gap: var(--space-sm); }
 .movement-panel .history-filter-label { flex-direction: column; align-items: flex-start; gap: 4px; }
 
-/* Rodapé "Copiar relatório": botão e legenda com folga, sem encostar na borda */
+/* Rodapé "Copiar relatório": botão e legenda com folga */
 .restock-actions { gap: var(--space-md); margin-top: var(--space-md); padding-top: var(--space-md); }
 .restock-note, .history-note { line-height: 1.6; }
+.report-panel .report-list,
+.movement-panel .movement-list { margin-top: var(--space-xs); }
 
-/* ---- Lista de produtos: todas as colunas com largura fixa e igual no cabeçalho e nas linhas ---- */
-.main-content .product-row,
+/* ---- Produtos e insumos: colunas com largura fixa, iguais no cabeçalho e nas linhas ---- */
 .main-content .list-header {
+  grid-template-columns: minmax(150px, 1fr) 168px 92px 318px;
+  padding: 0 14px var(--space-sm);
+  align-items: center;
+  column-gap: var(--space-md);
+}
+.main-content .list-header .column-label { text-align: left; }
+.main-content .product-row,
+.main-content .supply-row {
   grid-template-columns: minmax(150px, 1fr) 168px 92px 318px;
   align-items: center;
   column-gap: var(--space-md);
 }
-.main-content .list-header { padding: 0 14px var(--space-sm); }
-.main-content .list-header .column-label { text-align: left; }
-/* blocos internos não esticam nem quebram as colunas */
-.main-content .product-row .stock-status { justify-items: start; min-width: 0; }
-.main-content .product-row .stock-status .stock-badge { white-space: normal; text-align: left; }
-.main-content .product-row .stock-controls { gap: var(--space-xs); min-width: 0; }
-.main-content .product-row .quantity-value { text-align: left; }
-.main-content .product-row .product-actions { flex-wrap: nowrap; gap: var(--space-sm); min-width: 0; }
-.main-content .product-row .movement-buttons { display: flex; gap: var(--space-xs); flex: 0 0 auto; }
-.main-content .product-row .record-actions { flex: 0 0 auto; gap: var(--space-xs); margin-left: auto; }
-.main-content .product-row .movement-trigger { min-height: 36px; padding: 0 12px; }
-.main-content .product-row .edit-button,
-.main-content .product-row .delete-button { min-height: 36px; padding: 0 8px; }
-
-/* Insumos usam as mesmas colunas: situação, quanto tem, entrada/saída, editar/excluir */
-.main-content .supply-row,
-.main-content .supply-row.list-header { grid-template-columns: minmax(150px, 1fr) 168px 92px 318px; }
-.main-content .supply-row .stock-status,
-.main-content .supply-row .supply-amount-box { justify-items: start; min-width: 0; }
-.main-content .supply-row .stock-status .stock-badge { white-space: normal; text-align: left; }
+.main-content .product-row .stock-status,
+.main-content .supply-row .stock-status { width: 100%; justify-items: start; min-width: 0; }
+.main-content .product-row .stock-status .stock-badge,
+.main-content .supply-row .stock-status .stock-badge {
+  justify-content: center; width: 100%; max-width: 168px;
+  padding: 6px 10px; line-height: 1.3; white-space: normal; text-align: center;
+}
+.main-content .product-row .stock-controls,
+.main-content .supply-row .supply-amount-box { justify-self: start; gap: var(--space-xs); min-width: 0; }
+.main-content .product-row .quantity-value,
 .main-content .supply-row .supply-amount { text-align: left; }
-
-/* Telas médias: as ações descem para uma linha própria, com separador */
-@media (max-width: 1180px) {
-  .main-content .product-row,
-  .main-content .supply-row { grid-template-columns: minmax(0, 1fr) 168px 92px; row-gap: var(--space-sm); }
-  /* no modo simples os blocos são empilhados: volta a uma coluna só */
-  .simple-mode .product-row .product-details,
-  .simple-mode .product-row .stock-status,
-  .simple-mode .product-row .stock-controls,
-  .simple-mode .product-row .product-actions { grid-column: 1 / -1; }
-  .simple-mode .product-row .stock-status { grid-row: 2; }
-  .simple-mode .product-row .stock-controls { grid-row: 3; }
-  .simple-mode .product-row .product-actions { grid-row: 4; }
-  .simple-mode .supply-row .product-details,
-  .simple-mode .supply-row .stock-status,
-  .simple-mode .supply-row .supply-amount-box,
-  .simple-mode .supply-row .product-actions { grid-column: 1 / -1; }
-  .simple-mode .supply-row .stock-status { grid-row: 2; }
-  .simple-mode .supply-row .supply-amount-box { grid-row: 3; }
-  .simple-mode .supply-row .product-actions { grid-row: 4; }
-  .main-content .product-row .product-actions,
-  .main-content .supply-row .product-actions { grid-column: 1 / -1; justify-content: flex-start; border-top: 1px solid var(--line); padding-top: var(--space-sm); }
-  .main-content .product-row .record-actions { margin-left: 0; }
-}
-@media (max-width: 650px) {
-  .history-details-body { padding: 0 16px 16px; }
-  .main-content .product-row,
-  .main-content .supply-row { grid-template-columns: minmax(0, 1fr) auto; }
-  .main-content .product-row .product-actions,
-  .main-content .supply-row .product-actions { flex-wrap: wrap; gap: var(--space-sm); }
-}
+.main-content .product-row .product-actions,
+.main-content .supply-row .product-actions { flex-wrap: nowrap; gap: var(--space-sm); min-width: 0; }
+.main-content .product-row .movement-buttons,
+.main-content .supply-row .movement-buttons { display: flex; gap: var(--space-xs); flex: 0 0 auto; }
+.main-content .product-row .record-actions,
+.main-content .supply-row .record-actions { flex: 0 0 auto; gap: var(--space-xs); margin-left: auto; }
+.main-content .product-row .movement-trigger,
+.main-content .supply-row .movement-trigger { min-height: 36px; padding: 0 12px; }
+.main-content .product-row .edit-button,
+.main-content .product-row .delete-button,
+.main-content .supply-row .edit-button,
+.main-content .supply-row .delete-button { min-height: 36px; padding: 0 8px; }
 
 /* ---- Histórico: cabeçalho e linhas na mesma grade ---- */
 .movement-columns,
@@ -1511,27 +1488,120 @@ img.brand-mark {
 .movement-row .movement-type-box { justify-items: start; }
 .movement-row .movement-quantity-box { justify-items: end; }
 .movement-row .movement-quantity { text-align: right; }
-@media (max-width: 1100px) {
+
+/* ============================================================
+   Telas menores: uma única escada de breakpoints
+   (1180 → 850 → 650 → 360), para nenhuma regra antiga vazar.
+   ============================================================ */
+@media (max-width: 1180px) {
+  /* ações descem para uma linha própria, com separador */
+  .main-content .product-row,
+  .main-content .supply-row { grid-template-columns: minmax(0, 1fr) 168px 92px; row-gap: var(--space-sm); }
+  .main-content .product-row .product-actions,
+  .main-content .supply-row .product-actions {
+    grid-column: 1 / -1; justify-content: flex-start;
+    border-top: 1px solid var(--line); padding-top: var(--space-sm);
+  }
+  .main-content .product-row .record-actions,
+  .main-content .supply-row .record-actions { margin-left: 0; }
   .movement-columns { display: none; }
 }
 
-/* Badge de situação ocupa a coluna inteira, sem vazar para a coluna ao lado */
-.main-content .product-row .stock-status,
-.main-content .supply-row .stock-status { width: 100%; }
-.main-content .product-row .stock-status .stock-badge,
-.main-content .supply-row .stock-status .stock-badge {
-  justify-content: center;
-  width: 100%;
-  max-width: 168px;
-  padding: 6px 10px;
-  line-height: 1.3;
+@media (max-width: 850px) {
+  .main-content .product-row,
+  .main-content .supply-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .main-content .list-header { display: none; }
+  .main-content .product-row .column-label,
+  .main-content .supply-row .column-label { display: block; }
+  .main-content .product-row .stock-status,
+  .main-content .supply-row .stock-status { width: auto; }
+  .main-content .product-row .stock-status .stock-badge,
+  .main-content .supply-row .stock-status .stock-badge { max-width: none; width: auto; }
+  .main-content .product-row .product-actions,
+  .main-content .supply-row .product-actions { justify-content: space-between; }
 }
-.main-content .product-row .stock-controls,
-.main-content .supply-row .supply-amount-box { justify-self: start; }
 
-/* Relatórios: título e filtro de período com respiro e alinhados pela base */
-.report-panel .movement-heading { flex-wrap: wrap; }
-.report-panel .movement-heading h2 { font-size: var(--title-section); }
-.report-panel .report-list { margin-top: var(--space-xs); }
-.report-panel .restock-actions { padding-right: 0; }
-.movement-panel .movement-list { margin-top: var(--space-xs); }
+@media (max-width: 650px) {
+  .history-details-body { padding: 0 16px 16px; }
+  .restock-actions { flex-direction: column; align-items: flex-start; }
+  .restock-actions .secondary-button { width: 100%; }
+  .report-panel .movement-heading,
+  .movement-panel .movement-heading { align-items: stretch; }
+  .main-content .product-row,
+  .main-content .supply-row { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-sm); }
+  .main-content .product-row .product-details,
+  .main-content .supply-row .product-details { grid-column: 1; grid-row: 1; }
+  .main-content .product-row .stock-status,
+  .main-content .supply-row .stock-status { grid-column: 1; grid-row: 2; justify-items: start; }
+  .main-content .product-row .stock-controls,
+  .main-content .supply-row .supply-amount-box { grid-column: 1; grid-row: 3; justify-items: start; }
+  .main-content .product-row .product-actions,
+  .main-content .supply-row .product-actions { grid-column: 1; grid-row: 4; flex-wrap: wrap; gap: var(--space-sm); }
+  .main-content .product-row .movement-buttons,
+  .main-content .supply-row .movement-buttons { display: grid; grid-template-columns: 1fr 1fr; width: 100%; gap: var(--space-sm); }
+  .main-content .product-row .movement-trigger,
+  .main-content .supply-row .movement-trigger { min-height: 46px; padding: 0 10px; font-size: var(--text-base); }
+  .main-content .product-row .record-actions,
+  .main-content .supply-row .record-actions { width: 100%; justify-content: space-between; }
+  .main-content .product-row .edit-button,
+  .main-content .product-row .delete-button,
+  .main-content .supply-row .edit-button,
+  .main-content .supply-row .delete-button { min-height: 46px; padding: 0 14px; font-size: var(--text-base); }
+  .movement-row { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-xs); }
+  .movement-row .movement-type-box { justify-items: start; }
+  .movement-row .movement-quantity-box { justify-items: start; padding-top: var(--space-xs); border-top: 1px solid var(--line); width: 100%; }
+  .movement-row .movement-quantity { text-align: left; }
+  .movement-panel .movement-heading { flex-direction: column; align-items: stretch; }
+  .movement-panel .movement-filters { display: grid; grid-template-columns: 1fr; gap: var(--space-sm); }
+  .history-filter { width: 100%; }
+}
+
+@media (max-width: 360px) {
+  .main-content .product-row,
+  .main-content .supply-row { grid-template-columns: minmax(0, 1fr); }
+  .main-content .product-row .record-actions,
+  .main-content .supply-row .record-actions { width: 100%; justify-content: space-between; }
+}
+
+/* Modo simples: blocos empilhados, alinhados à esquerda, com folga */
+.simple-mode .main-content .product-row,
+.simple-mode .main-content .supply-row { grid-template-columns: minmax(0, 1fr); row-gap: var(--space-sm); }
+.simple-mode .main-content .product-row .product-details,
+.simple-mode .main-content .supply-row .product-details { grid-column: 1; grid-row: 1; }
+.simple-mode .main-content .product-row .stock-status,
+.simple-mode .main-content .supply-row .stock-status { grid-column: 1; grid-row: 2; justify-items: start; }
+.simple-mode .main-content .product-row .stock-status .stock-badge,
+.simple-mode .main-content .supply-row .stock-status .stock-badge { max-width: none; width: auto; text-align: left; }
+.simple-mode .main-content .product-row .stock-controls,
+.simple-mode .main-content .supply-row .supply-amount-box { grid-column: 1; grid-row: 3; justify-items: start; }
+.simple-mode .main-content .product-row .product-actions,
+.simple-mode .main-content .supply-row .product-actions { grid-column: 1; grid-row: 4; flex-wrap: wrap; justify-content: flex-start; }
+.simple-mode .main-content .product-row .record-actions,
+.simple-mode .main-content .supply-row .record-actions { margin-left: 0; }
+
+/* ============================================================
+   Outros pontos com texto apertado encontrados na revisão
+   ============================================================ */
+
+/* Cabeçalho de "Comprar insumos" e "Mais saíram": link e título com folga */
+.dashboard-panel-heading .text-link,
+.report-panel .restock-actions .restock-note { line-height: 1.5; }
+.low-stock-empty strong { line-height: 1.4; }
+
+/* Cartões de backup: no celular o botão não fica espremido no rodapé */
+.backup-card .backup-meta { margin-top: var(--space-xs); }
+
+/* Configurações: o botão de sair não encosta no texto de ajuda */
+.settings-actions { margin-top: var(--space-xs); }
+
+/* Tela de login: espaço entre a opção de lembrar e o botão Entrar */
+.login-card .primary-button { margin-top: var(--space-xs); }
+
+/* Calculadora: o visor não corta números longos */
+.calculator-display { font-variant-numeric: tabular-nums; }
+
+/* Foto ampliada: título longo não encosta no botão de fechar */
+.photo-viewer-head h2 { padding-right: var(--space-sm); }
+
+/* Histórico recolhido: "toque para abrir" não encosta na seta */
+.history-details > summary { gap: var(--space-md); padding-right: 18px; }
