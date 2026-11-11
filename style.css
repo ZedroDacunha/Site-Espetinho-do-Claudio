@@ -59,7 +59,7 @@ button { color: inherit; }
 .app-shell { min-height: 100vh; }
 .topbar { height: 76px; padding: 0 max(32px, calc((100vw - 1190px) / 2)); display: flex; align-items: center; justify-content: space-between; background: var(--surface); border-bottom: 1px solid var(--line); }
 .brand { color: var(--text); display: flex; align-items: center; gap: 11px; text-decoration: none; }
-.brand-mark { width: 38px; height: 38px; display: grid; place-items: center; background: var(--accent-soft); border-radius: 12px; font-size: 19px; }
+.brand-mark { width: 38px; height: 38px; display: grid; place-items: center; background: var(--accent-soft); border-radius: 12px; font-size: 19px; flex: 0 0 auto; }
 .brand-name { font: 800 16px 'Manrope', sans-serif; letter-spacing: -.5px; }
 .brand-name span { font-weight: 600; }
 .theme-toggle { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); padding: 9px 13px; color: var(--muted); cursor: pointer; transition: .18s; }
@@ -1390,3 +1390,25 @@ footer { line-height: 1.6; }
 .remember-device-text small { color: var(--muted); font-size: var(--text-sm); line-height: 1.45; }
 /* o seletor geral do login não deve esticar a caixinha */
 .login-card .remember-device input { width: 20px; height: 20px; margin: 1px 0 0; }
+
+/* ============================================================
+   Logo da marca (Espetinho do Cláudio)
+   ============================================================ */
+/* Login: logo grande e limpa, sem moldura */
+.login-logo {
+  display: block;
+  width: min(280px, 82%);
+  height: auto;
+  margin: 0 auto var(--space-lg);
+  filter: drop-shadow(0 6px 18px rgba(20, 16, 8, .10));
+}
+/* Topo: marca recortada em círculo, no lugar do emoji */
+img.brand-mark {
+  object-fit: contain;
+  background: transparent;
+  border-radius: 50%;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+:root[data-theme="dark"] img.brand-mark { box-shadow: 0 0 0 1px rgba(255, 255, 255, .12); }

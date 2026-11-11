@@ -659,6 +659,8 @@ function createApp({
   app.get("/index.html", (req, res) => res.sendFile(path.join(ROOT_DIR, "index.html")));
   app.get("/style.css", (req, res) => res.sendFile(path.join(ROOT_DIR, "style.css")));
   app.get("/script.js", (req, res) => res.sendFile(path.join(ROOT_DIR, "script.js")));
+  // Logo e ícones do site (favicon, logo do login e marca do topo)
+  app.use("/assets", express.static(path.join(ROOT_DIR, "assets"), { maxAge: "7d", index: false }));
   app.use("/api", (req, res) => res.status(404).json({ error: "Endpoint não encontrado." }));
   app.use((req, res) => res.status(404).send("Página não encontrada."));
   app.use((error, req, res, next) => {

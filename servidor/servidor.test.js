@@ -151,3 +151,23 @@ test("lembrar deste aparelho mantém a sessão por mais tempo", async t => {
   const state = await fetch(`${instance.baseUrl}/api/state`, { headers: { cookie: sameCookie } });
   assert.equal(state.status, 200);
 });
+
+test("serve a logo e os ícones do site", async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "claudio-assets-"));
+  const instance = await launch(path.join(directory, "state.json"));
+  t.after(async () => {
+    await close(instance.server);
+    await fs.rm(directory, { recursive: true, force: true });
+  });
+
+  for (const file of ["logo.png", "logo-mark.png", "favicon.png", "apple-touch-icon.png"]) {
+    const response = await fetch(`${instance.baseUrl}/assets/${file}`);
+    assert.equal(response.status, 200, `${file} servido`);
+    assert.match(response.headers.get("content-type"), /image\/png/);
+    const bytes = await response.arrayBuffer();
+    assert.ok(bytes.byteLength > 1000, `${file} não está vazio`);
+  }
+  const page = await (await fetch(instance.baseUrl)).text();
+  assert.match(page, /assets\/logo\.png/);
+  assert.match(page, /assets\/favicon\.png/);
+});
