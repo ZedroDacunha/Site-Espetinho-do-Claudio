@@ -1605,3 +1605,34 @@ img.brand-mark {
 
 /* Histórico recolhido: "toque para abrir" não encosta na seta */
 .history-details > summary { gap: var(--space-md); padding-right: 18px; }
+
+/* ============================================================
+   Coluna de quantidade centralizada
+   O rótulo "Quantidade" e o valor ("0 un.", "5 kg") ficam no
+   centro da própria coluna, na lista de produtos e de insumos.
+   ============================================================ */
+@media (min-width: 851px) {
+  /* rótulos do cabeçalho: 1º Produto, 2º Situação, 3º Quantidade, 4º Ações */
+  .main-content .list-header .column-label:nth-child(3) { text-align: center; }
+  .main-content .list-header .column-label:nth-child(4) { text-align: right; }
+
+  /* valor da quantidade no centro da coluna */
+  .main-content .product-row .stock-controls,
+  .main-content .supply-row .supply-amount-box {
+    justify-self: center;
+    justify-items: center;
+    width: 100%;
+  }
+  .main-content .product-row .quantity-value,
+  .main-content .supply-row .supply-amount {
+    text-align: center;
+    width: 100%;
+  }
+  /* situação continua alinhada à esquerda, casando com o título da coluna */
+  .main-content .product-row .stock-status,
+  .main-content .supply-row .stock-status { justify-self: start; }
+  .main-content .list-header .column-label:nth-child(2) { text-align: left; }
+  /* ações alinhadas à direita, como o rótulo "Ações" */
+  .main-content .product-row .product-actions,
+  .main-content .supply-row .product-actions { justify-self: end; }
+}
